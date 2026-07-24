@@ -26,7 +26,6 @@ const screens = {
   registration: document.getElementById("registrationScreen"),
   packages: document.getElementById("packagesScreen"),
   exam: document.getElementById("examScreen"),
-  closed: document.getElementById("closedScreen"),
 };
 
 function showScreen(name) {
@@ -126,11 +125,6 @@ async function init() {
   if (!currentExam) {
     document.body.innerHTML =
       "<p style='padding:2rem;text-align:center;color:#fff;'>الامتحان غير موجود</p>";
-    return;
-  }
-
-  if (currentExam.is_open === false) {
-    showScreen("closed");
     return;
   }
 
@@ -570,7 +564,7 @@ function evaluateProgress() {
 }
 
 /* =======================================
-   المؤقت وحساب الوقت المتبقي
+   المؤقت
 ======================================= */
 function parseUtcToMs(tsStr) {
   if (!tsStr) return null;
