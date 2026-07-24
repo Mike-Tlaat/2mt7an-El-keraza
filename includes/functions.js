@@ -130,15 +130,15 @@ export function gradeQuestion(type, userAnswer, correctAnswer) {
 ======================================= */
 export async function getGradeText(percentage) {
   const p = Number(percentage) || 0;
-  if (p >= 91) return "ممتاز";
-  if (p >= 76) return "جيد جداً";
-  if (p >= 61) return "جيد";
-  if (p >= 50) return "مقبول";
+  if (p >= 90) return "ممتاز";
+  if (p >= 80) return "جيد جداً";
+  if (p >= 70) return "جيد";
+  if (p >= 60) return "مقبول";
   return "ضعيف";
 }
 
 export async function getPassThreshold() {
-  return 50; // حد النجاح 50%
+  return 51; // نسبة النجاح من 51%
 }
 
 /* =======================================
@@ -452,7 +452,6 @@ export async function getAttemptsByPassFail(
     return [];
   }
 
-  // مطابقة أسماء الامتحانات بأمان دون استخدام العلاقات المباشرة المقيدة
   const examsList = await getAllExams();
   const examMap = {};
   examsList.forEach((e) => (examMap[e.id] = e.name));
@@ -486,4 +485,20 @@ export async function getPackageSelectionsBatch(attemptIds) {
   });
 
   return result;
+}
+
+/* =======================================
+   حذف طالب / محاولة من لوحة التحكم
+======================================= */
+export async function deleteAttempt(attemptId) {
+  const { error } = await supabase
+    .from("attempts")
+    .delete()
+    .eq("id", attemptId);
+
+  if (error) {
+    console.error("Error deleting attempt:", error);
+    throw error;
+  }
+  return true;
 }
