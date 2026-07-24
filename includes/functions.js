@@ -1,17 +1,28 @@
-// includes/functions.js
 import { supabase } from "./db.js";
-import { QUESTIONS_PATH, PACKAGE_CATEGORIES, SPORTS_TOGGLE_ITEM } from "./config.js";
+import {
+  QUESTIONS_PATH,
+  PACKAGE_CATEGORIES,
+  SPORTS_TOGGLE_ITEM,
+} from "./config.js";
 
 /* =======================================
    الامتحانات
 ======================================= */
 export async function getExamBySlug(slug) {
-  const { data } = await supabase.from("exams").select("*").eq("slug", slug).maybeSingle();
+  const { data } = await supabase
+    .from("exams")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
   return data || null;
 }
 
 export async function getExamById(examId) {
-  const { data } = await supabase.from("exams").select("*").eq("id", examId).maybeSingle();
+  const { data } = await supabase
+    .from("exams")
+    .select("*")
+    .eq("id", examId)
+    .maybeSingle();
   return data || null;
 }
 
@@ -44,7 +55,9 @@ export async function loadQuestions(jsonFile) {
     if (hasAllIds) flat.sort((a, b) => a.id - b.id);
   }
 
-  flat = flat.map((q) => (q.type === "complete" ? { ...q, type: "fill_in_the_blank" } : q));
+  flat = flat.map((q) =>
+    q.type === "complete" ? { ...q, type: "fill_in_the_blank" } : q,
+  );
   return flat;
 }
 
@@ -52,11 +65,19 @@ export async function loadQuestions(jsonFile) {
    التصحيح التلقائي
 ======================================= */
 export function getAutoGradedTypes() {
-  return ["true_false", "multiple_choice", "location_source", "fill_in_the_blank"];
+  return [
+    "true_false",
+    "multiple_choice",
+    "location_source",
+    "fill_in_the_blank",
+  ];
 }
 
 function normalize(value) {
-  return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 export function isAnswerCorrect(userAnswer, correctAnswer) {
@@ -72,18 +93,22 @@ export function isAnswerCorrect(userAnswer, correctAnswer) {
 function normalizeBlanksCorrectAnswer(correctAnswer) {
   if (!Array.isArray(correctAnswer)) return [[String(correctAnswer)]];
   const isNested = correctAnswer.some((v) => Array.isArray(v));
-  if (isNested) return correctAnswer.map((v) => (Array.isArray(v) ? v : [String(v)]));
+  if (isNested)
+    return correctAnswer.map((v) => (Array.isArray(v) ? v : [String(v)]));
   return [correctAnswer];
 }
 
 function gradeFillInTheBlank(userAnswer, correctAnswer) {
   const blanks = normalizeBlanksCorrectAnswer(correctAnswer);
   const userBlanks = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
-  return blanks.every((accepted, i) => isAnswerCorrect(userBlanks[i] ?? "", accepted));
+  return blanks.every((accepted, i) =>
+    isAnswerCorrect(userBlanks[i] ?? "", accepted),
+  );
 }
 
 export function gradeQuestion(type, userAnswer, correctAnswer) {
-  if (type === "fill_in_the_blank") return gradeFillInTheBlank(userAnswer, correctAnswer);
+  if (type === "fill_in_the_blank")
+    return gradeFillInTheBlank(userAnswer, correctAnswer);
   if (["true_false", "multiple_choice", "location_source"].includes(type)) {
     return isAnswerCorrect(userAnswer, correctAnswer);
   }
@@ -96,9 +121,13 @@ export function gradeQuestion(type, userAnswer, correctAnswer) {
 let settingsCache = null;
 async function getSettingsMap() {
   if (settingsCache) return settingsCache;
-  const { data } = await supabase.from("settings").select("setting_key, setting_value");
+  const { data } = await supabase
+    .from("settings")
+    .select("setting_key, setting_value");
   settingsCache = {};
-  (data || []).forEach((row) => (settingsCache[row.setting_key] = row.setting_value));
+  (data || []).forEach(
+    (row) => (settingsCache[row.setting_key] = row.setting_value),
+  );
   return settingsCache;
 }
 
@@ -151,11 +180,14 @@ export async function createAttempt(examId, name, church, phone) {
 }
 
 export async function getAttempt(attemptId) {
-  const { data } = await supabase.from("attempts").select("*").eq("id", attemptId).maybeSingle();
+  const { data } = await supabase
+    .from("attempts")
+    .select("*")
+    .eq("id", attemptId)
+    .maybeSingle();
   return data || null;
 }
 
-// تسجيل أو جلب أول لحظة يشوف فيها الطالب صفحة الأسئلة
 export async function ensureExamStarted(attemptId) {
   const attempt = await getAttempt(attemptId);
   if (attempt && !attempt.exam_started_at) {
@@ -188,12 +220,16 @@ export async function submitExamAttempt(attemptId, questions, postedAnswers) {
       cleanAnswer = rawAnswer.map((v) => String(v ?? "").trim());
       storedAnswer = JSON.stringify(cleanAnswer);
     } else {
-      cleanAnswer = Array.isArray(rawAnswer) ? "" : String(rawAnswer ?? "").trim();
+      cleanAnswer = Array.isArray(rawAnswer)
+        ? ""
+        : String(rawAnswer ?? "").trim();
       storedAnswer = cleanAnswer;
     }
 
     const autoGraded = autoGradedTypes.includes(type);
-    const isCorrect = autoGraded ? gradeQuestion(type, cleanAnswer, correctAnswer) : false;
+    const isCorrect = autoGraded
+      ? gradeQuestion(type, cleanAnswer, correctAnswer)
+      : false;
     const score = isCorrect ? 1 : 0;
 
     if (autoGraded) {
@@ -206,7 +242,9 @@ export async function submitExamAttempt(attemptId, questions, postedAnswers) {
       question_index: index,
       question_type: type,
       user_answer: storedAnswer,
-      correct_answer: Array.isArray(correctAnswer) ? JSON.stringify(correctAnswer) : String(correctAnswer),
+      correct_answer: Array.isArray(correctAnswer)
+        ? JSON.stringify(correctAnswer)
+        : String(correctAnswer),
       auto_graded: autoGraded,
       is_correct: isCorrect,
       score,
@@ -219,7 +257,9 @@ export async function submitExamAttempt(attemptId, questions, postedAnswers) {
   const passFail = percentage >= passThreshold ? "pass" : "fail";
 
   if (rows.length) {
-    const { error: ansErr } = await supabase.from("answers").upsert(rows, { onConflict: "attempt_id,question_index" });
+    const { error: ansErr } = await supabase
+      .from("answers")
+      .upsert(rows, { onConflict: "attempt_id,question_index" });
     if (ansErr) throw ansErr;
   }
 
@@ -260,7 +300,9 @@ export async function loadPackages() {
     const result = { ...empty };
     Object.keys(categories).forEach((cat) => {
       if (Array.isArray(data[cat])) {
-        result[cat] = data[cat].map((v) => String(v).trim()).filter((v) => v !== "");
+        result[cat] = data[cat]
+          .map((v) => String(v).trim())
+          .filter((v) => v !== "");
       }
     });
     return result;
@@ -269,7 +311,11 @@ export async function loadPackages() {
   }
 }
 
-export async function savePackageSelections(attemptId, selections, sportsEnabled) {
+export async function savePackageSelections(
+  attemptId,
+  selections,
+  sportsEnabled,
+) {
   const categories = getPackageCategories();
   const available = await loadPackages();
 
@@ -281,7 +327,9 @@ export async function savePackageSelections(attemptId, selections, sportsEnabled
     if (!Array.isArray(chosen)) chosen = chosen ? [chosen] : [];
 
     const validItems = available[category] || [];
-    chosen = [...new Set(chosen.filter((v) => v !== "" && validItems.includes(v)))];
+    chosen = [
+      ...new Set(chosen.filter((v) => v !== "" && validItems.includes(v))),
+    ];
 
     if (category === "أنشطة") {
       const withoutSports = chosen.filter((v) => v !== SPORTS_TOGGLE_ITEM);
@@ -291,14 +339,19 @@ export async function savePackageSelections(attemptId, selections, sportsEnabled
       chosen = sportsEnabled ? chosen.slice(0, categories[category]) : [];
     }
 
-    chosen.forEach((item) => rowsToInsert.push({ attempt_id: attemptId, category, item }));
+    chosen.forEach((item) =>
+      rowsToInsert.push({ attempt_id: attemptId, category, item }),
+    );
   }
 
   if (rowsToInsert.length) {
     await supabase.from("attempt_packages").insert(rowsToInsert);
   }
 
-  await supabase.from("attempts").update({ packages_confirmed: true }).eq("id", attemptId);
+  await supabase
+    .from("attempts")
+    .update({ packages_confirmed: true })
+    .eq("id", attemptId);
   return true;
 }
 
@@ -320,7 +373,26 @@ export async function getPackageSelections(attemptId) {
 /* =======================================
    لوحة الإدارة
 ======================================= */
-export async function countAttemptsByPassFail(passFail, filterCategory = null, filterItem = null) {
+export async function countAttemptsByPassFail(
+  passFail,
+  filterCategory = null,
+  filterItem = null,
+  filterChurch = null,
+  filterExamId = null,
+) {
+  let query = supabase
+    .from("attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("pass_fail", passFail);
+
+  if (filterChurch) {
+    query = query.eq("user_church", filterChurch);
+  }
+
+  if (filterExamId) {
+    query = query.eq("exam_id", Number(filterExamId));
+  }
+
   if (filterCategory && filterItem) {
     const { data } = await supabase
       .from("attempt_packages")
@@ -329,22 +401,22 @@ export async function countAttemptsByPassFail(passFail, filterCategory = null, f
       .eq("item", filterItem);
     const ids = (data || []).map((r) => r.attempt_id);
     if (!ids.length) return 0;
-    const { count } = await supabase
-      .from("attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("pass_fail", passFail)
-      .in("id", ids);
-    return count || 0;
+    query = query.in("id", ids);
   }
 
-  const { count } = await supabase
-    .from("attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("pass_fail", passFail);
+  const { count } = await query;
   return count || 0;
 }
 
-export async function getAttemptsByPassFail(passFail, filterCategory, filterItem, limit = 50, offset = 0) {
+export async function getAttemptsByPassFail(
+  passFail,
+  filterCategory = null,
+  filterItem = null,
+  filterChurch = null,
+  filterExamId = null,
+  limit = 50,
+  offset = 0,
+) {
   let idFilter = null;
   if (filterCategory && filterItem) {
     const { data } = await supabase
@@ -358,15 +430,31 @@ export async function getAttemptsByPassFail(passFail, filterCategory, filterItem
 
   let query = supabase
     .from("attempts")
-    .select("id, exam_id, user_name, user_church, user_phone, status, total_score, total_possible, percentage, grade_text, pass_fail, created_at, exams(name)")
+    .select(
+      "id, exam_id, user_name, user_church, user_phone, status, total_score, total_possible, percentage, grade_text, pass_fail, created_at, exams(name)",
+    )
     .eq("pass_fail", passFail)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+    .order("created_at", { ascending: false });
 
-  if (idFilter) query = query.in("id", idFilter);
+  if (filterChurch) {
+    query = query.eq("user_church", filterChurch);
+  }
+
+  if (filterExamId) {
+    query = query.eq("exam_id", Number(filterExamId));
+  }
+
+  if (idFilter) {
+    query = query.in("id", idFilter);
+  }
+
+  query = query.range(offset, offset + limit - 1);
 
   const { data } = await query;
-  return (data || []).map((row) => ({ ...row, exam_name: row.exams?.name || "" }));
+  return (data || []).map((row) => ({
+    ...row,
+    exam_name: row.exams?.name || "",
+  }));
 }
 
 export async function getPackageSelectionsBatch(attemptIds) {
@@ -386,7 +474,8 @@ export async function getPackageSelectionsBatch(attemptIds) {
 
   (data || []).forEach((row) => {
     if (!result[row.attempt_id]) result[row.attempt_id] = {};
-    if (!result[row.attempt_id][row.category]) result[row.attempt_id][row.category] = [];
+    if (!result[row.attempt_id][row.category])
+      result[row.attempt_id][row.category] = [];
     result[row.attempt_id][row.category].push(row.item);
   });
 
