@@ -1,13 +1,14 @@
 // admin_list_render.js
-// منطق وواجهة عرض قائمة الطلاب (ناجحين / غير ناجحين) - بدون أي باسورد
-// مبني للسرعة: COUNT خفيف + Pagination + سحب أعمدة محددة فقط + Batch للبكدجات
+// منطق وواجهة عرض قائمة الطلاب (ناجحين / غير ناجحين) مع الفلترة الشاملة
 
 import {
   loadPackages,
   countAttemptsByPassFail,
   getAttemptsByPassFail,
   getPackageSelectionsBatch,
+  getAllExams,
 } from "../includes/functions.js";
+import { CHURCHES_LIST } from "../includes/config.js";
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -26,29 +27,72 @@ export async function renderAdminAttemptsPage(tab) {
   const perPage = 50;
   const qs = new URLSearchParams(location.search);
   let page = Math.max(1, Number(qs.get("page") || 1));
+
+  const filterChurch = qs.get("church") || "";
+  const filterExam = qs.get("exam") || "";
   const filterRaw = qs.get("filter") || "";
+
   let filterCategory = "";
   let filterItem = "";
   if (filterRaw && filterRaw.includes("|||")) {
     [filterCategory, filterItem] = filterRaw.split("|||");
   }
 
-  const packages = await loadPackages();
-  const totalCount = await countAttemptsByPassFail(tab, filterCategory, filterItem);
+  const [packages, exams] = await Promise.all([
+    loadPackages(),
+    getAllExams(),
+  ]);
+
+  const passTotal = await countAttemptsByPassFail(
+    "pass",
+    filterCategory,
+    filterItem,
+    filterChurch,
+    filterExam,
+  );
+  const failTotal = await countAttemptsByPassFail(
+    "fail",
+    filterCategory,
+    filterItem,
+    filterChurch,
+    filterExam,
+  );
+
+  const totalCount = tab === "pass" ? passTotal : failTotal;
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
   if (page > totalPages) page = totalPages;
   const offset = (page - 1) * perPage;
 
-  const attempts = await getAttemptsByPassFail(tab, filterCategory, filterItem, perPage, offset);
+  const attempts = await getAttemptsByPassFail(
+    tab,
+    filterCategory,
+    filterItem,
+    filterChurch,
+    filterExam,
+    perPage,
+    offset,
+  );
   const ids = attempts.map((a) => a.id);
   const selectionsBatch = await getPackageSelectionsBatch(ids);
-
-  const passTotal = await countAttemptsByPassFail("pass");
-  const failTotal = await countAttemptsByPassFail("fail");
 
   const isPassPage = tab === "pass";
   const pageTitle = isPassPage ? "الناجحون" : "غير الناجحين";
 
+  // قائمة خيارات الكنائس
+  const churchOptionsHtml = CHURCHES_LIST.map((church) => {
+    const selected = filterChurch === church ? "selected" : "";
+    return `<option value="${escapeHtml(church)}" ${selected}>${escapeHtml(church)}</option>`;
+  }).join("");
+
+  // قائمة خيارات الامتحانات
+  const examOptionsHtml = exams
+    .map((exam) => {
+      const selected = String(filterExam) === String(exam.id) ? "selected" : "";
+      return `<option value="${exam.id}" ${selected}>${escapeHtml(exam.name)}</option>`;
+    })
+    .join("");
+
+  // قائمة خيارات الأنشطة
   const filterOptionsHtml = Object.entries(packages)
     .filter(([, items]) => items.length)
     .map(
@@ -57,13 +101,33 @@ export async function renderAdminAttemptsPage(tab) {
         ${items
           .map((item) => {
             const val = `${category}|||${item}`;
-            const selected = filterCategory === category && filterItem === item ? "selected" : "";
+            const selected =
+              filterCategory === category && filterItem === item ? "selected" : "";
             return `<option value="${escapeHtml(val)}" ${selected}>${escapeHtml(item)}</option>`;
           })
           .join("")}
-      </optgroup>`
+      </optgroup>`,
     )
     .join("");
+
+  const hasActiveFilters = Boolean(
+    filterChurch || filterExam || (filterCategory && filterItem),
+  );
+
+  const activeNotes = [];
+  if (filterChurch) activeNotes.push(`الكنيسة: ${escapeHtml(filterChurch)}`);
+  if (filterExam) {
+    const exObj = exams.find((e) => String(e.id) === String(filterExam));
+    if (exObj) activeNotes.push(`الامتحان: ${escapeHtml(exObj.name)}`);
+  }
+  if (filterCategory && filterItem) {
+    activeNotes.push(`النشاط: ${escapeHtml(filterItem)}`);
+  }
+
+  // رابط التبديل بين الناجحين وغير الناجحين مع الحفاظ على الفلاتر
+  const tabParams = new URLSearchParams(qs);
+  tabParams.delete("page");
+  const tabQueryStr = tabParams.toString() ? `?${tabParams.toString()}` : "";
 
   const rowsHtml = attempts.length
     ? attempts
@@ -76,10 +140,15 @@ export async function renderAdminAttemptsPage(tab) {
               <div class="a-pkg-tags">
                 ${
                   items.length
-                    ? items.map((it) => `<span class="a-pkg-tag">${escapeHtml(it)}</span>`).join("")
+                    ? items
+                        .map(
+                          (it) =>
+                            `<span class="a-pkg-tag">${escapeHtml(it)}</span>`,
+                        )
+                        .join("")
                     : `<span class="a-pkg-tag none">لم يتم الاختيار</span>`
                 }
-              </div>`
+              </div>`,
             )
             .join("");
 
@@ -113,7 +182,9 @@ export async function renderAdminAttemptsPage(tab) {
     for (let p = 1; p <= totalPages; p++) {
       const params = new URLSearchParams(qs);
       params.set("page", p);
-      links.push(`<a href="?${params.toString()}" class="${p === page ? "active" : ""}">${p}</a>`);
+      links.push(
+        `<a href="?${params.toString()}" class="${p === page ? "active" : ""}">${p}</a>`,
+      );
     }
     paginationHtml = `<div class="a-pagination">${links.join("")}</div>`;
   }
@@ -130,24 +201,43 @@ export async function renderAdminAttemptsPage(tab) {
     <div class="a-stats-row">
       <div class="a-stat-card"><div class="num" style="color:var(--a-success);">${passTotal}</div><div class="lbl">إجمالي الناجحين</div></div>
       <div class="a-stat-card"><div class="num" style="color:var(--a-danger);">${failTotal}</div><div class="lbl">إجمالي غير الناجحين</div></div>
-      <div class="a-stat-card"><div class="num">${totalCount}</div><div class="lbl">النتائج المعروضة الآن${filterCategory ? " (بالفلتر)" : ""}</div></div>
+      <div class="a-stat-card"><div class="num">${totalCount}</div><div class="lbl">النتائج المعروضة الآن${hasActiveFilters ? " (بالفلتر)" : ""}</div></div>
     </div>
 
     <div class="a-tabs-row">
-      <a href="passed.html" class="a-tab-btn ${isPassPage ? "active pass" : ""}"><i class="fa-solid fa-circle-check"></i> الناجحون (${passTotal})</a>
-      <a href="failed.html" class="a-tab-btn ${!isPassPage ? "active fail" : ""}"><i class="fa-solid fa-circle-xmark"></i> غير الناجحين (${failTotal})</a>
+      <a href="passed.html${tabQueryStr}" class="a-tab-btn ${isPassPage ? "active pass" : ""}"><i class="fa-solid fa-circle-check"></i> الناجحون (${passTotal})</a>
+      <a href="failed.html${tabQueryStr}" class="a-tab-btn ${!isPassPage ? "active fail" : ""}"><i class="fa-solid fa-circle-xmark"></i> غير الناجحين (${failTotal})</a>
     </div>
 
-    <form class="a-filter-bar" method="GET">
-      <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> فلترة حسب النشاط:</label>
-      <select name="filter">
-        <option value="">-- كل الطلاب --</option>
-        ${filterOptionsHtml}
-      </select>
+    <form class="a-filter-bar" method="GET" style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-church"></i> الكنيسة:</label>
+        <select name="church">
+          <option value="">-- كل الكنائس --</option>
+          ${churchOptionsHtml}
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-book-open"></i> الامتحان:</label>
+        <select name="exam">
+          <option value="">-- كل الامتحانات --</option>
+          ${examOptionsHtml}
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> النشاط:</label>
+        <select name="filter">
+          <option value="">-- كل الأنشطة --</option>
+          ${filterOptionsHtml}
+        </select>
+      </div>
+
       <button type="submit"><i class="fa-solid fa-magnifying-glass"></i> فلترة</button>
       ${
-        filterCategory && filterItem
-          ? `<span class="a-filter-active-note">يعرض فقط من اختار: ${escapeHtml(filterItem)}</span><a class="clear-link" href="?">إلغاء الفلتر</a>`
+        hasActiveFilters
+          ? `<span class="a-filter-active-note">يعرض: ${activeNotes.join(" | ")}</span><a class="clear-link" href="?">إلغاء الفلاتر</a>`
           : ""
       }
     </form>
@@ -159,17 +249,22 @@ export async function renderAdminAttemptsPage(tab) {
             <tbody>${rowsHtml}</tbody>
           </table>
           ${paginationHtml}`
-        : `<div class="a-empty-state"><i class="fa-solid fa-inbox"></i>لا يوجد طلاب في هذا القسم حالياً${filterCategory ? " بهذا الفلتر" : ""}.</div>`
+        : `<div class="a-empty-state"><i class="fa-solid fa-inbox"></i>لا يوجد طلاب في هذا القسم حالياً${hasActiveFilters ? " بهذا الفلتر" : ""}.</div>`
     }
   `;
 
-  window.toggleRow = (id) => document.getElementById(`detail_${id}`).classList.toggle("open");
+  window.toggleRow = (id) =>
+    document.getElementById(`detail_${id}`).classList.toggle("open");
 
   const themeToggle = document.getElementById("themeToggle");
   const htmlEl = document.documentElement;
-  htmlEl.setAttribute("data-theme", localStorage.getItem("admin_theme") || "dark");
+  htmlEl.setAttribute(
+    "data-theme",
+    localStorage.getItem("admin_theme") || "dark",
+  );
   themeToggle.addEventListener("click", () => {
-    const next = htmlEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    const next =
+      htmlEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
     htmlEl.setAttribute("data-theme", next);
     localStorage.setItem("admin_theme", next);
   });
