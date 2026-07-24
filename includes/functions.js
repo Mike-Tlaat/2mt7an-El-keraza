@@ -1,7 +1,4 @@
-// functions.js
-// كل الدوال المشتركة (تحميل الأسئلة - التصحيح التلقائي - إدارة المحاولات - البكدجات)
-// تم حذف نظام مكافحة الغش بالكامل من هذا الملف
-
+// includes/functions.js
 import { supabase } from "./db.js";
 import { QUESTIONS_PATH, PACKAGE_CATEGORIES, SPORTS_TOGGLE_ITEM } from "./config.js";
 
@@ -47,9 +44,7 @@ export async function loadQuestions(jsonFile) {
     if (hasAllIds) flat.sort((a, b) => a.id - b.id);
   }
 
-  // توحيد اسم نوع سؤال "الإكمال"
   flat = flat.map((q) => (q.type === "complete" ? { ...q, type: "fill_in_the_blank" } : q));
-
   return flat;
 }
 
@@ -78,7 +73,7 @@ function normalizeBlanksCorrectAnswer(correctAnswer) {
   if (!Array.isArray(correctAnswer)) return [[String(correctAnswer)]];
   const isNested = correctAnswer.some((v) => Array.isArray(v));
   if (isNested) return correctAnswer.map((v) => (Array.isArray(v) ? v : [String(v)]));
-  return [correctAnswer]; // مصفوفة مسطحة = فراغ واحد بعدة إجابات مقبولة
+  return [correctAnswer];
 }
 
 function gradeFillInTheBlank(userAnswer, correctAnswer) {
@@ -92,11 +87,11 @@ export function gradeQuestion(type, userAnswer, correctAnswer) {
   if (["true_false", "multiple_choice", "location_source"].includes(type)) {
     return isAnswerCorrect(userAnswer, correctAnswer);
   }
-  return false; // essay / answer تحتاج تصحيح يدوي
+  return false;
 }
 
 /* =======================================
-   إعدادات النظام (كاش داخل الصفحة - استعلام واحد فقط)
+   إعدادات النظام
 ======================================= */
 let settingsCache = null;
 async function getSettingsMap() {
@@ -160,24 +155,23 @@ export async function getAttempt(attemptId) {
   return data || null;
 }
 
-// تسجيل أول لحظة يشوف فيها الطالب صفحة الأسئلة (مرة واحدة بس، منها يُحسب العد التنازلي)
+// تسجيل أو جلب أول لحظة يشوف فيها الطالب صفحة الأسئلة
 export async function ensureExamStarted(attemptId) {
   const attempt = await getAttempt(attemptId);
   if (attempt && !attempt.exam_started_at) {
-    await supabase
+    const nowIso = new Date().toISOString();
+    const { data } = await supabase
       .from("attempts")
-      .update({ exam_started_at: new Date().toISOString() })
+      .update({ exam_started_at: nowIso })
       .eq("id", attemptId)
-      .is("exam_started_at", null);
+      .is("exam_started_at", null)
+      .select("exam_started_at")
+      .maybeSingle();
+    return data?.exam_started_at || nowIso;
   }
+  return attempt?.exam_started_at || null;
 }
 
-/*
-  حفظ إجابات التسليم النهائي دفعة واحدة (استعلامين فقط بغض النظر عن عدد الأسئلة):
-  1) INSERT واحد متعدد الصفوف لجدول answers
-  2) UPDATE واحد لجدول attempts (الحالة + الدرجة + لقطة JSON)
-  التصحيح نفسه يتم في المتصفح في الذاكرة بدون أي استعلام إضافي.
-*/
 export async function submitExamAttempt(attemptId, questions, postedAnswers) {
   const rows = [];
   let totalScore = 0;
@@ -248,13 +242,12 @@ export async function submitExamAttempt(attemptId, questions, postedAnswers) {
 }
 
 /* =======================================
-   نظام اختيار الأنشطة (البكدجات)
+   نظام اختيار الأنشطة
 ======================================= */
 export function getPackageCategories() {
   return PACKAGE_CATEGORIES;
 }
 
-// تحميل بيانات البكدجات من ملف pk.json الموجود في فولدر questions
 export async function loadPackages() {
   const categories = getPackageCategories();
   const empty = {};
@@ -276,11 +269,6 @@ export async function loadPackages() {
   }
 }
 
-/*
-  حفظ اختيارات الطالب من البكدجات (تُستدعى عند تأكيد اختيار الأنشطة).
-  ملحوظة: "مسابقات رياضية" لا تُحسب ضمن الحد الأقصى (3) لبكدج الأنشطة، فهي مجرد
-  خانة تفعّل قسمي "اللعب الفردي" و"اللعب الجماعي" - يتم التحقق من هذا هنا أيضاً كحماية إضافية.
-*/
 export async function savePackageSelections(attemptId, selections, sportsEnabled) {
   const categories = getPackageCategories();
   const available = await loadPackages();
@@ -296,12 +284,10 @@ export async function savePackageSelections(attemptId, selections, sportsEnabled
     chosen = [...new Set(chosen.filter((v) => v !== "" && validItems.includes(v)))];
 
     if (category === "أنشطة") {
-      // نحسب الحد الأقصى بدون احتساب خيار "مسابقات رياضية"
       const withoutSports = chosen.filter((v) => v !== SPORTS_TOGGLE_ITEM);
       chosen = withoutSports.slice(0, categories[category]);
       if (sportsEnabled) chosen.push(SPORTS_TOGGLE_ITEM);
     } else {
-      // بكدجات الألعاب لا تُحفظ إلا لو المستخدم فعّل خانة المسابقات الرياضية
       chosen = sportsEnabled ? chosen.slice(0, categories[category]) : [];
     }
 
@@ -332,7 +318,7 @@ export async function getPackageSelections(attemptId) {
 }
 
 /* =======================================
-   لوحة الإدارة (بدون باسورد)
+   لوحة الإدارة
 ======================================= */
 export async function countAttemptsByPassFail(passFail, filterCategory = null, filterItem = null) {
   if (filterCategory && filterItem) {
