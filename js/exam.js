@@ -1,5 +1,4 @@
 // exam.js - تسجيل الطالب -> اختيار الأنشطة -> الامتحان المباشر -> التصحيح والتسليم
-// تم حذف نظام مكافحة الغش بالكامل: لا مراقبة لتبديل التبويبات ولا حالة "cheated"
 
 import { EXAM_DURATION_SECONDS, MAX_ACTIVITIES, SPORTS_TOGGLE_ITEM, PACKAGE_CATEGORIES } from "../includes/config.js";
 import {
@@ -36,6 +35,7 @@ function escapeHtml(str) {
 }
 
 const attemptStorageKey = (examId) => `attempt_id_${examId}`;
+const localStartTimeKey = (attId) => `exam_start_ms_${attId}`;
 
 let currentExam = null;
 let currentAttempt = null;
@@ -258,7 +258,6 @@ async function showPackages() {
   }
   sportsToggle.addEventListener("change", updateSportsVisibility);
 
-  // حد أقصى 3 أنشطة (بدون احتساب خانة المسابقات الرياضية)
   activitiesCard.querySelectorAll('input[type="checkbox"]:not(#sportsToggle)').forEach((input) => {
     input.addEventListener("change", (e) => {
       const checkedCount = activitiesCard.querySelectorAll('input[type="checkbox"]:not(#sportsToggle):checked').length;
@@ -272,7 +271,6 @@ async function showPackages() {
     });
   });
 
-  // لعبة واحدة فردي + لعبة واحدة جماعي كحد أقصى (كل قسم بحد أقصى واحد)
   [individualCard, teamCard].forEach((card) => {
     card.querySelectorAll("input").forEach((input) => {
       input.addEventListener("change", (e) => {
@@ -359,7 +357,6 @@ async function startExam() {
   document.getElementById("userNameTag").textContent = currentAttempt.user_name;
   document.getElementById("userPhoneTag").textContent = currentAttempt.user_phone;
 
-  // استرجاع أي إجابات محفوظة محلياً
   try {
     answers = JSON.parse(localStorage.getItem(answersStorageKey())) || {};
   } catch {
@@ -434,7 +431,6 @@ function renderQuestions() {
     })
     .join("");
 
-  // ربط الأحداث
   container.querySelectorAll('input[type="radio"]').forEach((input) => {
     input.addEventListener("change", () => {
       const index = input.dataset.index;
@@ -490,24 +486,39 @@ function evaluateProgress() {
 }
 
 /* =======================================
-   المؤقت (تم الإصلاح لمنع الإغلاق المباشر)
+   المؤقت المعدل ذكياً المقاوم للمشاكل
 ======================================= */
 function startTimer() {
-  const base = currentAttempt ? (currentAttempt.exam_started_at || currentAttempt.start_time) : null;
-  let parsedTime = base ? new Date(base).getTime() : NaN;
-
-  // إذا كانت القيمة غير صالحة أو فارغة أو تساوي 0، استخدم الوقت الحالي فوراً
-  if (isNaN(parsedTime) || parsedTime <= 0) {
-    parsedTime = Date.now();
-  }
-
-  examStartedAtMs = parsedTime;
   const timerEl = document.getElementById("timer");
   const timerContainer = document.getElementById("timerContainer");
 
+  let startTimeMs = null;
+
+  // 1. الفحص المحالي أولاً: هل بدأ الطالب الامتحان على هذا المتصفح مسبقاً؟
+  const savedLocalStart = localStorage.getItem(localStartTimeKey(attemptId));
+  if (savedLocalStart && !isNaN(Number(savedLocalStart))) {
+    startTimeMs = Number(savedLocalStart);
+  } 
+  // 2. الفحص من قاعدة البيانات إذا كان مسجلاً تاريخ بدء حقيقي (بدون الاعتماد على start_time)
+  else if (currentAttempt && currentAttempt.exam_started_at) {
+    const dbTime = new Date(currentAttempt.exam_started_at).getTime();
+    if (!isNaN(dbTime) && dbTime > 0) {
+      startTimeMs = dbTime;
+    }
+  }
+
+  // 3. إذا لم نجد تاريخ بدء مؤكد، نعتبر الوقت الحالي هو بداية الامتحان ونحفظه محلياً
+  if (!startTimeMs) {
+    startTimeMs = Date.now();
+    localStorage.setItem(localStartTimeKey(attemptId), String(startTimeMs));
+  }
+
+  examStartedAtMs = startTimeMs;
+
   function tick() {
     const elapsed = Math.floor((Date.now() - examStartedAtMs) / 1000);
-    const remaining = Math.max(0, EXAM_DURATION_SECONDS - elapsed);
+    const duration = EXAM_DURATION_SECONDS || 1800; // 30 دقيقة افتراضياً
+    const remaining = Math.max(0, duration - elapsed);
 
     if (remaining <= 0) {
       timerEl.textContent = "00:00";
@@ -576,8 +587,10 @@ async function submitExam(isTimeOut) {
 
   try {
     await submitExamAttempt(attemptId, questions, answers);
+    // مسح الذاكرة المحلية لهذه المحاولة عند التسليم بنجاح
     localStorage.removeItem(answersStorageKey());
     localStorage.removeItem(attemptStorageKey(currentExam.id));
+    localStorage.removeItem(localStartTimeKey(attemptId));
     window.location.href = `results.html?attempt=${attemptId}`;
   } catch (err) {
     submitBtn.disabled = false;
