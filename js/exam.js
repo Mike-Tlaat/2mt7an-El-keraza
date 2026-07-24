@@ -570,7 +570,7 @@ function evaluateProgress() {
 }
 
 /* =======================================
-   المؤقت الآمن والحل الفعلي للثغرة
+   المؤقت وحساب الوقت المتبقي
 ======================================= */
 function parseUtcToMs(tsStr) {
   if (!tsStr) return null;
@@ -591,13 +591,11 @@ function startTimer() {
   const timerKey = timerStartStorageKey(attemptId);
   let startMs = null;
 
-  // 1. الفحص من التخزين المحلي للمحاولة الحالية أولاً
   const localSaved = localStorage.getItem(timerKey);
   if (localSaved && !isNaN(Number(localSaved))) {
     startMs = Number(localSaved);
   }
 
-  // 2. الفحص من قاعدة البيانات مع التأكد من مطابقة صيغة UTC
   if (!startMs && currentAttempt && currentAttempt.exam_started_at) {
     const dbMs = parseUtcToMs(currentAttempt.exam_started_at);
     if (dbMs && Date.now() - dbMs < durationSeconds * 1000) {
@@ -605,7 +603,6 @@ function startTimer() {
     }
   }
 
-  // 3. إن لم يوجد توقيت سابق صالح، نعتبر اللحظة الحالية هي البداية
   if (!startMs || isNaN(startMs)) {
     startMs = Date.now();
   }
