@@ -1,11 +1,12 @@
 // admin_list_render.js
+// منطق وواجهة عرض قائمة الطلاب (ناجحين / غير ناجحين) مع الفلترة الشاملة
+
 import {
   loadPackages,
   countAttemptsByPassFail,
   getAttemptsByPassFail,
   getPackageSelectionsBatch,
   getAllExams,
-  deleteAttempt,
 } from "../includes/functions.js";
 import { CHURCHES_LIST } from "../includes/config.js";
 
@@ -16,12 +17,9 @@ function escapeHtml(str) {
 }
 
 function scoreColor(percentage) {
-  const p = Number(percentage) || 0;
-  if (p >= 91) return "#22c55e"; // ممتاز
-  if (p >= 76) return "#3b82f6"; // جيد جداً
-  if (p >= 61) return "#eab308"; // جيد
-  if (p >= 50) return "#f97316"; // مقبول
-  return "#ef4444"; // راسب
+  if (percentage >= 75) return "var(--a-success)";
+  if (percentage >= 50) return "var(--a-warning)";
+  return "var(--a-danger)";
 }
 
 export async function renderAdminAttemptsPage(tab) {
@@ -40,7 +38,10 @@ export async function renderAdminAttemptsPage(tab) {
     [filterCategory, filterItem] = filterRaw.split("|||");
   }
 
-  const [packages, exams] = await Promise.all([loadPackages(), getAllExams()]);
+  const [packages, exams] = await Promise.all([
+    loadPackages(),
+    getAllExams(),
+  ]);
 
   const passTotal = await countAttemptsByPassFail(
     "pass",
@@ -77,13 +78,13 @@ export async function renderAdminAttemptsPage(tab) {
   const isPassPage = tab === "pass";
   const pageTitle = isPassPage ? "الناجحون" : "غير الناجحين";
 
-  // قائمة الكنائس
+  // قائمة خيارات الكنائس
   const churchOptionsHtml = CHURCHES_LIST.map((church) => {
     const selected = filterChurch === church ? "selected" : "";
     return `<option value="${escapeHtml(church)}" ${selected}>${escapeHtml(church)}</option>`;
   }).join("");
 
-  // قائمة الامتحانات
+  // قائمة خيارات الامتحانات
   const examOptionsHtml = exams
     .map((exam) => {
       const selected = String(filterExam) === String(exam.id) ? "selected" : "";
@@ -91,7 +92,7 @@ export async function renderAdminAttemptsPage(tab) {
     })
     .join("");
 
-  // قائمة الأنشطة والألعاب
+  // قائمة خيارات الأنشطة
   const filterOptionsHtml = Object.entries(packages)
     .filter(([, items]) => items.length)
     .map(
@@ -101,9 +102,7 @@ export async function renderAdminAttemptsPage(tab) {
           .map((item) => {
             const val = `${category}|||${item}`;
             const selected =
-              filterCategory === category && filterItem === item
-                ? "selected"
-                : "";
+              filterCategory === category && filterItem === item ? "selected" : "";
             return `<option value="${escapeHtml(val)}" ${selected}>${escapeHtml(item)}</option>`;
           })
           .join("")}
@@ -125,6 +124,7 @@ export async function renderAdminAttemptsPage(tab) {
     activeNotes.push(`النشاط: ${escapeHtml(filterItem)}`);
   }
 
+  // رابط التبديل بين الناجحين وغير الناجحين مع الحفاظ على الفلاتر
   const tabParams = new URLSearchParams(qs);
   tabParams.delete("page");
   const tabQueryStr = tabParams.toString() ? `?${tabParams.toString()}` : "";
@@ -158,16 +158,9 @@ export async function renderAdminAttemptsPage(tab) {
             <td>${escapeHtml(a.user_church)}</td>
             <td>${escapeHtml(a.user_phone)}</td>
             <td>${escapeHtml(a.exam_name)}</td>
-            <td class="pct-pill" style="color:${scoreColor(a.percentage)}; font-weight: bold;">${Number(a.percentage).toFixed(1)}%</td>
+            <td class="pct-pill" style="color:${scoreColor(a.percentage)}">${Number(a.percentage).toFixed(1)}%</td>
             <td>${escapeHtml(a.grade_text || "-")}</td>
-            <td>
-              <div style="display:flex; align-items:center; gap:0.5rem; justify-content:flex-end;">
-                <button type="button" onclick="event.stopPropagation(); handleDeleteStudent(${a.id}, '${escapeHtml(a.user_name)}')" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.5rem; cursor:pointer; font-size:0.8rem;">
-                  <i class="fa-solid fa-trash"></i> مسح
-                </button>
-                <i class="fa-solid fa-chevron-down"></i>
-              </div>
-            </td>
+            <td><i class="fa-solid fa-chevron-down"></i></td>
           </tr>
           <tr class="a-detail-row" id="detail_${a.id}">
             <td colspan="7">
@@ -200,7 +193,7 @@ export async function renderAdminAttemptsPage(tab) {
     <div class="a-topbar">
       <div>
         <h1><i class="fa-solid fa-graduation-cap"></i> ${pageTitle}</h1>
-        <p>عرض سريع لقائمة الطلاب واختياراتهم من الأنشطة والأنشطة الرياضية</p>
+        <p>عرض سريع لقائمة الطلاب واختياراتهم من الأنشطة (بدون تحميل إجاباتهم)</p>
       </div>
       <button class="a-theme-btn" id="themeToggle"><i class="fa-solid fa-circle-half-stroke"></i></button>
     </div>
@@ -234,7 +227,7 @@ export async function renderAdminAttemptsPage(tab) {
       </div>
 
       <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> النشاط / اللعبة:</label>
+        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> النشاط:</label>
         <select name="filter">
           <option value="">-- كل الأنشطة --</option>
           ${filterOptionsHtml}
@@ -252,7 +245,7 @@ export async function renderAdminAttemptsPage(tab) {
     ${
       attempts.length
         ? `<table class="a-table">
-            <thead><tr><th>الاسم</th><th>الكنيسة</th><th>الهاتف</th><th>الامتحان</th><th>النسبة</th><th>التقدير</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الكنيسة</th><th>الهاتف</th><th>الامتحان</th><th>النسبة</th><th>التقدير</th><th></th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
           ${paginationHtml}`
@@ -262,25 +255,6 @@ export async function renderAdminAttemptsPage(tab) {
 
   window.toggleRow = (id) =>
     document.getElementById(`detail_${id}`).classList.toggle("open");
-
-  window.handleDeleteStudent = async (id, name) => {
-    const password = prompt(`حذف الطالب "${name}"؟\nأدخل كلمة المرور للتأكيد:`);
-    if (password === null) return;
-    
-    if (password !== "213510") {
-      alert("كلمة المرور غير صحيحة!");
-      return;
-    }
-
-    try {
-      await deleteAttempt(id);
-      alert("تم مسح الطالب بنجاح!");
-      window.location.reload();
-    } catch (err) {
-      console.error(err);
-      alert("حدث خطأ أثناء المسح!");
-    }
-  };
 
   const themeToggle = document.getElementById("themeToggle");
   const htmlEl = document.documentElement;
