@@ -5,8 +5,11 @@ import {
   getAttemptsByPassFail,
   getPackageSelectionsBatch,
   getAllExams,
+  deleteAttempt,
 } from "../includes/functions.js";
 import { CHURCHES_LIST } from "../includes/config.js";
+
+const ADMIN_DELETE_PASSWORD = "213510"; // باسورد الحذف الخاص بك
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -16,10 +19,10 @@ function escapeHtml(str) {
 
 function scoreColor(percentage) {
   const p = Number(percentage) || 0;
-  if (p >= 91) return "#22c55e"; // ممتاز
-  if (p >= 76) return "#3b82f6"; // جيد جداً
-  if (p >= 61) return "#eab308"; // جيد
-  if (p >= 50) return "#f97316"; // مقبول
+  if (p >= 90) return "#22c55e"; // ممتاز
+  if (p >= 80) return "#3b82f6"; // جيد جداً
+  if (p >= 70) return "#eab308"; // جيد
+  if (p >= 60) return "#f97316"; // مقبول
   return "#ef4444";             // ضعيف
 }
 
@@ -39,10 +42,7 @@ export async function renderAdminAttemptsPage(tab) {
     [filterCategory, filterItem] = filterRaw.split("|||");
   }
 
-  const [packages, exams] = await Promise.all([
-    loadPackages(),
-    getAllExams(),
-  ]);
+  const [packages, exams] = await Promise.all([loadPackages(), getAllExams()]);
 
   const passTotal = await countAttemptsByPassFail(
     "pass",
@@ -103,7 +103,9 @@ export async function renderAdminAttemptsPage(tab) {
           .map((item) => {
             const val = `${category}|||${item}`;
             const selected =
-              filterCategory === category && filterItem === item ? "selected" : "";
+              filterCategory === category && filterItem === item
+                ? "selected"
+                : "";
             return `<option value="${escapeHtml(val)}" ${selected}>${escapeHtml(item)}</option>`;
           })
           .join("")}
@@ -170,6 +172,12 @@ export async function renderAdminAttemptsPage(tab) {
                 <div class="a-detail-box"><div class="t">تاريخ التسجيل</div><div class="v" style="font-size:.8rem;">${escapeHtml(a.created_at)}</div></div>
               </div>
               <div class="a-pkg-block">${pkgBlocksHtml}</div>
+              
+              <div style="margin-top: 1rem; text-align: left;">
+                <button type="button" class="a-delete-btn" onclick="confirmDeleteAttempt(${a.id}, '${escapeHtml(a.user_name)}')" style="background: #ef4444; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                  <i class="fa-solid fa-trash-can"></i> حذف هذا الطالب
+                </button>
+              </div>
             </td>
           </tr>`;
         })
@@ -254,7 +262,29 @@ export async function renderAdminAttemptsPage(tab) {
   `;
 
   window.toggleRow = (id) =>
-    document.getElementById(`detail_${id}`).classList.toggle("open");
+    document.getElementById(`detail_${id}`)?.classList.toggle("open");
+
+  // معالجة طلب حذف الطالب برقم سري
+  window.confirmDeleteAttempt = async (attemptId, userName) => {
+    const password = prompt(
+      `أدخل كلمة المرور لتأكيد حذف الطالب (${userName}):`,
+    );
+
+    if (password === null) return;
+
+    if (password !== ADMIN_DELETE_PASSWORD) {
+      alert("❌ كلمة المرور غير صحيحة! لا يمكنك حذف الطالب.");
+      return;
+    }
+
+    try {
+      await deleteAttempt(attemptId);
+      alert(`✅ تم حذف الطالب (${userName}) بنجاح.`);
+      window.location.reload();
+    } catch (err) {
+      alert("حدث خطأ أثناء تنفيذ الحذف، يرجى المحاولة لاحقاً.");
+    }
+  };
 
   const themeToggle = document.getElementById("themeToggle");
   const htmlEl = document.documentElement;
