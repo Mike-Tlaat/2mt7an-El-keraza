@@ -1,152 +1,46 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الامتحان</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <style>
-    :root {
-      --bg-app: #090d16; --bg-card: #111827; --text-main: #f8fafc; --text-muted: #94a3b8;
-      --primary: #3b82f6; --primary-hover: #2563eb; --primary-glow: rgba(59, 130, 246, 0.15);
-      --border: rgba(255, 255, 255, 0.08); --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      --radius: 20px; --radius-sm: 12px; --success: #10b981; --danger: #ef4444;
-      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-    body {
-      background-color: var(--bg-app); color: var(--text-main); min-height: 100vh;
-      padding: 1.5rem;
-      background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 40%),
-        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.04), transparent 40%);
-    }
-    .center-screen { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 3rem); }
-    .auth-container, .pkg-container, .exam-container { width: 100%; max-width: 560px; margin: 0 auto; animation: fadeIn .5s ease; }
-    .exam-container { max-width: 780px; }
-    .dev-credit { text-align: center; margin-bottom: 1rem; font-size: .7rem; color: rgba(148,163,184,.35); letter-spacing: .5px; }
-    .card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 2.5rem; box-shadow: var(--shadow); position: relative; overflow: hidden;
-    }
-    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg,#3b82f6,#10b981); }
-    .head { text-align: center; margin-bottom: 2rem; }
-    .head h2 { font-size: 1.6rem; font-weight: 800; }
-    .head p { color: var(--text-muted); font-size: .95rem; margin-top: .4rem; }
-    .warning-box {
-      background: rgba(59,130,246,.06); border: 1px solid rgba(59,130,246,.2); color: #93c5fd;
-      padding: 1.1rem; border-radius: 12px; margin-bottom: 1.75rem; font-size: .88rem; line-height: 1.7;
-    }
-    .warning-box h4 { font-weight: 700; margin-bottom: .4rem; display:flex; align-items:center; gap:.5rem; }
-    .error-alert {
-      background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); color: #ef4444;
-      padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: .92rem;
-      display:flex; align-items:center; gap:.6rem;
-    }
-    .form-group { margin-bottom: 1.4rem; }
-    .form-group label { display:block; font-size:.88rem; font-weight:600; margin-bottom:.5rem; color:#cbd5e1; }
-    .input-wrapper { position: relative; }
-    .input-wrapper i { position:absolute; top:50%; right:1.1rem; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
-    .input-wrapper input, .input-wrapper select {
-      width:100%; padding:.95rem 3rem .95rem 1.1rem; background:rgba(0,0,0,.2); border:1px solid var(--border);
-      border-radius:12px; outline:none; font-size:1rem; color:var(--text-main); appearance:none;
-    }
-    .input-wrapper select option { background: var(--bg-card); color: var(--text-main); }
-    .input-wrapper input:focus, .input-wrapper select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
-    .btn-submit {
-      width:100%; padding:1rem; background: linear-gradient(135deg,var(--primary),var(--primary-hover));
-      color:#fff; border:none; border-radius:12px; font-size:1.05rem; font-weight:700; cursor:pointer;
-      display:flex; justify-content:center; align-items:center; gap:.6rem; transition: var(--transition);
-      box-shadow: 0 4px 12px rgba(59,130,246,.3);
-    }
-    .btn-submit:hover { transform: translateY(-2px); }
-    .btn-submit:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-
-    /* Packages */
-    .pkg-card { background: var(--bg-card); border:1px solid var(--border); border-radius: var(--radius); padding:1.5rem; margin-bottom:1.25rem; }
-    .pkg-card-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap: wrap; gap:.5rem; }
-    .pkg-card-title h3 { font-size:1.1rem; font-weight:800; }
-    .limit-badge { font-size:.72rem; color:var(--text-muted); background:rgba(255,255,255,.05); padding:.3rem .7rem; border-radius:20px; }
-    .pkg-options { display:grid; grid-template-columns: 1fr 1fr; gap:.6rem; }
-    .pkg-option { display:flex; align-items:center; gap:.6rem; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:10px; padding:.65rem .8rem; cursor:pointer; font-size:.9rem; }
-    .pkg-option input { width:16px; height:16px; accent-color: var(--primary); }
-    .pkg-empty-note { color: var(--text-muted); font-size: .85rem; padding:.5rem .25rem; }
-
-    /* Exam taking */
-    .exam-top-bar { display:flex; justify-content:space-between; align-items:center; background: var(--bg-card); border:1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom:1.5rem; }
-    #timerContainer { display:flex; align-items:center; gap:.5rem; font-weight:800; font-size:1.1rem; }
-    #timerContainer.critical { color: var(--danger); }
-    .progress-wrap { flex:1; margin: 0 1.5rem; }
-    .progress-track { height:8px; background: rgba(255,255,255,.06); border-radius: 10px; overflow:hidden; }
-    #progressBar { height:100%; background: linear-gradient(90deg,#3b82f6,#10b981); width:0%; transition: width .3s ease; }
-    #progressText { font-size:.75rem; color: var(--text-muted); margin-top:.4rem; }
-    .question-card { background: var(--bg-card); border:1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; transition: var(--transition); }
-    .question-card.highlight-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
-    .q-index { font-size:.8rem; color: var(--primary); font-weight:800; margin-bottom:.5rem; }
-    .q-text { font-size:1.05rem; font-weight:700; margin-bottom:1rem; line-height:1.7; }
-    .option-item { display:flex; align-items:center; gap:.7rem; background: rgba(255,255,255,.03); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; margin-bottom:.6rem; cursor:pointer; }
-    .option-item.selected-active { border-color: var(--primary); background: rgba(59,130,246,.08); }
-    .option-item input { width:17px; height:17px; accent-color: var(--primary); }
-    .blank-input, .text-answer-input {
-      width:100%; padding:.8rem 1rem; background: rgba(0,0,0,.2); border:1px solid var(--border);
-      border-radius:10px; color: var(--text-main); font-size:1rem; margin-bottom:.5rem; outline:none;
-    }
-    .blank-input:focus, .text-answer-input:focus { border-color: var(--primary); }
-    #submitExamBtn { position: sticky; bottom: 1rem; }
-
-    /* Modal */
-    .custom-modal-overlay { position:fixed; inset:0; background: rgba(7,10,18,.8); backdrop-filter: blur(8px); display:none; align-items:center; justify-content:center; z-index:2000; padding:1.5rem; opacity:0; transition: opacity .3s ease; }
-    .custom-modal-overlay.active { display:flex; opacity:1; }
-    .custom-modal-box { background:#111827; border:1px solid var(--border); border-radius: var(--radius); padding:2.25rem; max-width:480px; width:100%; text-align:center; box-shadow: var(--shadow); transform: scale(.9); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
-    .custom-modal-overlay.active .custom-modal-box { transform: scale(1); }
-    .modal-icon-wrapper { width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.1rem; font-size:2rem; }
-    .modal-icon-wrapper.warning-type { background: rgba(245,158,11,.1); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
-    .modal-icon-wrapper.success-type { background: rgba(16,185,129,.1); color:#10b981; border:1px solid rgba(16,185,129,.25); }
-    .custom-modal-box h3 { font-size:1.25rem; margin-bottom:.6rem; font-weight:800; }
-    .modal-summary { text-align:right; background: rgba(255,255,255,.03); border:1px solid var(--border); border-radius: var(--radius-sm); padding:1rem 1.25rem; margin-bottom:1.4rem; font-size:.9rem; line-height:1.9; }
-    .modal-summary strong { color: var(--success); }
-    .modal-text-desc { color: var(--text-muted); font-size:.92rem; line-height:1.6; margin-bottom:1.4rem; }
-    .modal-buttons-group { display:flex; gap:.7rem; }
-    .modal-btn { flex:1; padding:.8rem; border-radius:10px; font-weight:700; cursor:pointer; border:none; font-size:.92rem; }
-    .modal-btn-primary { background: linear-gradient(135deg,var(--primary),var(--primary-hover)); color:#fff; }
-    .modal-btn-secondary { background: rgba(255,255,255,.05); color: var(--text-muted); border:1px solid var(--border); }
-
-    @keyframes fadeIn { from{opacity:0; transform: translateY(15px);} to{opacity:1; transform: translateY(0);} }
-    .loading-screen { text-align:center; color: var(--text-muted); padding: 4rem 0; }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+<body class="exam-page" id="pageBody">
 
-<body>
-  <div id="loadingScreen" class="center-screen"><div class="loading-screen"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><p style="margin-top:1rem;">جارِ التحميل...</p></div></div>
+  <div id="loadingScreen" class="loading-screen">
+    <div class="spinner"></div>
+    <p>جاري التحميل...</p>
+  </div>
 
-  <!-- ============ المرحلة 1: تسجيل بيانات الطالب ============ -->
-  <div id="registerScreen" class="center-screen" style="display:none;">
+  <!-- ===================== المرحلة 1: تسجيل البيانات ===================== -->
+  <section id="registrationScreen" class="hidden">
     <div class="auth-container">
       <div class="dev-credit">Developed by Mike Talaat</div>
-      <div class="card">
-        <div class="head">
-          <h2>بوابة الامتحانات الذكية</h2>
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2>بوابة الامتحانات</h2>
           <p>الرجاء تسجيل البيانات بدقة لبدء الامتحان الحالي</p>
         </div>
 
-        <div id="registerError" class="error-alert" style="display:none;">
-          <i class="fa-solid fa-circle-exclamation"></i> <span id="registerErrorText"></span>
+        <div id="registrationError" class="error-alert hidden">
+          <i class="fa-solid fa-circle-exclamation"></i> <span id="registrationErrorText"></span>
         </div>
 
-        <form id="registerForm" autocomplete="off">
+        <form id="registrationForm" autocomplete="off">
           <div class="form-group">
             <label>الاسم الكامل رباعي</label>
             <div class="input-wrapper">
-              <input type="text" id="user_name" placeholder="اكتب اسمك كاملاً كما في الهوية" required>
+              <input type="text" name="user_name" placeholder="اكتب اسمك كاملاً كما في الهوية" required>
               <i class="fa-regular fa-user"></i>
             </div>
           </div>
           <div class="form-group">
             <label>اختر الكنيسة</label>
             <div class="input-wrapper">
-              <select id="user_church" required>
+              <select name="user_church" required>
                 <option value="" disabled selected>اختر كنيستك من القائمة...</option>
                 <option value="كنيسة السيدة العذراء مريم والشهيد ابانوب - سمنود">كنيسة السيدة العذراء مريم والشهيد ابانوب - سمنود</option>
                 <option value="كنيسة السيدة العذراء مريم - المحلة">كنيسة السيدة العذراء مريم - المحلة</option>
@@ -173,526 +67,81 @@
           <div class="form-group">
             <label>رقم الهاتف المعتمد (11 رقم)</label>
             <div class="input-wrapper">
-              <input type="tel" id="user_phone" placeholder="01xxxxxxxxx" maxlength="11" minlength="11" pattern="[0-9]{11}" required style="text-align:right;">
+              <input type="tel" name="user_phone" placeholder="01xxxxxxxxx" maxlength="11" minlength="11" pattern="[0-9]{11}" required style="text-align:right;">
               <i class="fa-solid fa-phone"></i>
             </div>
           </div>
-          <button type="submit" class="btn-submit" id="registerSubmitBtn">
-            <span>الموافقة وبدء الامتحان الفوري</span>
+          <button type="submit" class="btn-submit">
+            <span>الموافقة وبدء الامتحان</span>
             <i class="fa-solid fa-bolt"></i>
           </button>
         </form>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- ============ المرحلة 2: اختيار الأنشطة (البكدجات) ============ -->
-  <div id="packagesScreen" style="display:none; padding-top: 1rem;">
+  <!-- ===================== المرحلة 2: اختيار الأنشطة ===================== -->
+  <section id="packagesScreen" class="hidden">
     <div class="pkg-container">
-      <div class="head">
+      <div class="pkg-header">
         <h2><i class="fa-solid fa-star" style="color:var(--primary);"></i> اختيار الأنشطة</h2>
         <p>قبل الدخول إلى الامتحان، من فضلك اختر الأنشطة التي ترغب في الاشتراك بها (اختياري تماماً، ولك الحرية في عدم الاختيار).</p>
       </div>
-      <div id="packagesRoot"></div>
+
+      <div id="packagesContainer"></div>
+
       <button type="button" class="btn-submit" id="reviewPackagesBtn">
         <span>مراجعة الاختيار والدخول إلى الامتحان</span>
         <i class="fa-solid fa-arrow-left"></i>
       </button>
     </div>
-  </div>
+  </section>
 
-  <!-- ============ المرحلة 3: أداء الامتحان ============ -->
-  <div id="examScreen" style="display:none; padding-top: 1rem;">
-    <div class="exam-container">
-      <div class="exam-top-bar">
-        <div id="timerContainer"><i class="fa-regular fa-clock"></i><span id="timer">--:--</span></div>
-        <div class="progress-wrap">
-          <div class="progress-track"><div id="progressBar"></div></div>
-          <div id="progressText">تم حل 0 من أصل 0 أسئلة</div>
+  <!-- ===================== المرحلة 3: الامتحان ===================== -->
+  <section id="examScreen" class="hidden">
+    <div class="dev-credit">Developed by Mike Talaat</div>
+
+    <div class="sticky-dashboard">
+      <div class="header-main-row">
+        <div class="exam-info">
+          <h2 id="examTitle"></h2>
+          <div class="user-meta-tabs">
+            <span class="meta-tag"><i class="fa-regular fa-user"></i> <span id="userNameTag"></span></span>
+            <span class="meta-tag"><i class="fa-solid fa-mobile-screen-button"></i> <span id="userPhoneTag"></span></span>
+          </div>
+        </div>
+        <div class="timer-badge" id="timerContainer">
+          <i class="fa-regular fa-clock"></i> <span id="timer">30:00</span>
         </div>
       </div>
-      <div id="questionsRoot"></div>
-      <button type="button" class="btn-submit" id="submitExamBtn">
-        <span>تسليم الامتحان نهائياً</span>
-        <i class="fa-solid fa-paper-plane"></i>
-      </button>
-    </div>
-  </div>
-
-  <!-- مودالات مشتركة -->
-  <div class="custom-modal-overlay" id="alertModal">
-    <div class="custom-modal-box">
-      <div class="modal-icon-wrapper warning-type"><i class="fa-solid fa-triangle-exclamation"></i></div>
-      <h3 id="alertModalTitle">تنبيه</h3>
-      <p class="modal-text-desc" id="alertModalText"></p>
-      <div class="modal-buttons-group"><button type="button" class="modal-btn modal-btn-primary" id="closeAlertModalBtn">حسناً، فهمت</button></div>
-    </div>
-  </div>
-
-  <div class="custom-modal-overlay" id="confirmModal">
-    <div class="custom-modal-box">
-      <div class="modal-icon-wrapper success-type"><i class="fa-solid fa-circle-check"></i></div>
-      <h3 id="confirmModalTitle">تأكيد</h3>
-      <div class="modal-summary" id="modalSummary" style="display:none;"></div>
-      <p class="modal-text-desc" id="confirmModalText" style="display:none;"></p>
-      <div class="modal-buttons-group">
-        <button type="button" class="modal-btn modal-btn-secondary" id="cancelConfirmBtn">تراجع</button>
-        <button type="button" class="modal-btn modal-btn-primary" id="okConfirmBtn">تأكيد</button>
+      <div class="progress-container">
+        <div class="progress-bar-wrapper"><div class="progress-bar-fill" id="progressBar"></div></div>
+        <div class="progress-text" id="progressText">0 من أصل 0 أسئلة مكتملة</div>
       </div>
     </div>
+
+    <div class="exam-container">
+      <div id="submitErrorBox" class="submit-error-box hidden"></div>
+      <form id="examForm">
+        <div id="questionsContainer"></div>
+        <div class="exam-actions-bar">
+          <button type="button" class="btn-finish" id="submitExamBtn">إنهاء وتسليم الامتحان</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== مودال تفاعلي مشترك ===================== -->
+  <div class="custom-modal-overlay" id="customModal">
+    <div class="custom-modal-box">
+      <div class="modal-icon-wrapper" id="modalIcon"></div>
+      <h3 id="modalTitle">تأكيد الإجراء</h3>
+      <p class="modal-text" id="modalText"></p>
+      <div class="modal-summary hidden" id="modalSummary"></div>
+      <div class="modal-buttons-group" id="modalButtons"></div>
+    </div>
   </div>
 
-  <script src="js/supabase-client.js"></script>
-  <script>
-    const EXAM_DURATION_SECONDS = 30 * 60; // 30 دقيقة - مطابق للنظام القديم
-    const PHONE_REGEX = /^[0-9]{11}$/;
-
-    const params = new URLSearchParams(window.location.search);
-    const examSlug = params.get('exam') || '';
-
-    let exam = null;
-    let attemptId = null;
-    let questions = [];
-    let timerInterval = null;
-
-    const $ = (id) => document.getElementById(id);
-    const show = (id) => { $(id).style.display = ''; };
-    const hide = (id) => { $(id).style.display = 'none'; };
-    const showOnly = (id) => {
-      ['loadingScreen','registerScreen','packagesScreen','examScreen'].forEach(s => hide(s));
-      show(id);
-    };
-
-    function attemptStorageKey() { return 'exam_attempt_' + examSlug; }
-
-    function showAlertModal(title, text, onClose) {
-      $('alertModalTitle').innerText = title;
-      $('alertModalText').innerText = text;
-      $('alertModal').classList.add('active');
-      $('closeAlertModalBtn').onclick = () => {
-        $('alertModal').classList.remove('active');
-        if (onClose) onClose();
-      };
-    }
-
-    function showConfirmModal({ title, summaryHtml, text, confirmText, cancelText, onConfirm }) {
-      $('confirmModalTitle').innerText = title;
-      if (summaryHtml) { $('modalSummary').style.display = ''; $('modalSummary').innerHTML = summaryHtml; } else { $('modalSummary').style.display = 'none'; }
-      if (text) { $('confirmModalText').style.display = ''; $('confirmModalText').innerText = text; } else { $('confirmModalText').style.display = 'none'; }
-      $('okConfirmBtn').innerText = confirmText || 'تأكيد';
-      $('cancelConfirmBtn').innerText = cancelText || 'تراجع';
-      $('confirmModal').classList.add('active');
-      $('okConfirmBtn').onclick = () => { $('confirmModal').classList.remove('active'); if (onConfirm) onConfirm(); };
-      $('cancelConfirmBtn').onclick = () => { $('confirmModal').classList.remove('active'); };
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str ?? '';
-      return div.innerHTML;
-    }
-
-    // =====================================================
-    // نقطة الدخول
-    // =====================================================
-    async function init() {
-      if (!examSlug) { document.body.innerHTML = '<div class="center-screen"><h2>الامتحان غير موجود</h2></div>'; return; }
-
-      const savedAttemptId = localStorage.getItem(attemptStorageKey());
-
-      if (savedAttemptId) {
-        attemptId = parseInt(savedAttemptId, 10);
-        const { data, error } = await supabaseClient.rpc('get_attempt_status', { p_attempt_id: attemptId });
-        if (!error && data && data.status === 'success') {
-          if (data.attempt_status === 'submitted' || data.attempt_status === 'graded') {
-            window.location.href = 'results.html?attempt=' + attemptId;
-            return;
-          }
-          if (!data.packages_confirmed) {
-            await loadPackagesScreen();
-            return;
-          }
-          await startExamScreen(data.exam_started_at);
-          return;
-        }
-        // المحاولة المحفوظة غير صالحة، نمسحها ونكمل تسجيل جديد
-        localStorage.removeItem(attemptStorageKey());
-      }
-
-      await loadRegisterScreen();
-    }
-
-    // =====================================================
-    // المرحلة 1: التسجيل
-    // =====================================================
-    async function loadRegisterScreen() {
-      const { data: examRow, error } = await supabaseClient.from('exams').select('*').eq('slug', examSlug).maybeSingle();
-      if (error || !examRow) {
-        document.body.innerHTML = '<div class="center-screen"><h2>الامتحان غير موجود</h2></div>';
-        return;
-      }
-      exam = examRow;
-      document.title = 'تسجيل البيانات - ' + exam.name;
-      showOnly('registerScreen');
-    }
-
-    $('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = $('registerSubmitBtn');
-      btn.disabled = true;
-
-      const name = $('user_name').value.trim();
-      const church = $('user_church').value;
-      const phone = $('user_phone').value.trim();
-
-      $('registerError').style.display = 'none';
-
-      if (!name || !church || !phone) {
-        $('registerErrorText').innerText = 'الرجاء ملء جميع الحقول المطلوبة بشكل صحيح.';
-        $('registerError').style.display = 'flex';
-        btn.disabled = false;
-        return;
-      }
-      if (!PHONE_REGEX.test(phone)) {
-        $('registerErrorText').innerText = '⚠️ يرجى إدخال رقم هاتف صحيح مكون من 11 رقم.';
-        $('registerError').style.display = 'flex';
-        btn.disabled = false;
-        return;
-      }
-
-      const { data, error } = await supabaseClient.rpc('start_attempt', {
-        p_exam_id: exam.id, p_name: name, p_church: church, p_phone: phone
-      });
-
-      if (error || !data || data.status !== 'success') {
-        $('registerErrorText').innerText = (data && data.message) || 'حدث خطأ في الاتصال بقاعدة البيانات.';
-        $('registerError').style.display = 'flex';
-        btn.disabled = false;
-        return;
-      }
-
-      attemptId = data.attempt_id;
-      localStorage.setItem(attemptStorageKey(), String(attemptId));
-      await loadPackagesScreen();
-      btn.disabled = false;
-    });
-
-    // =====================================================
-    // المرحلة 2: البكدجات (الأنشطة)
-    // =====================================================
-    const PACKAGE_BADGES = {
-      'أنشطة': 'اختر حتى 3 أنشطة كحد أقصى',
-      'اللعب الفردي': 'مجموع الألعاب (فردي + جماعي) = يُختار فقط عند اختيار "مسابقات رياضية"',
-      'اللعب الجماعي': 'مجموع الألعاب (فردي + جماعي) = يُختار فقط عند اختيار "مسابقات رياضية"'
-    };
-
-    async function loadPackagesScreen() {
-      const [{ data: categories }, { data: items }] = await Promise.all([
-        supabaseClient.from('package_categories').select('*'),
-        supabaseClient.from('packages').select('*')
-      ]);
-
-      const byCategory = {};
-      (categories || []).forEach(c => byCategory[c.category] = { max: c.max_choices, items: [] });
-      (items || []).forEach(i => { if (byCategory[i.category]) byCategory[i.category].items.push(i.item); });
-
-      const root = $('packagesRoot');
-      root.innerHTML = Object.entries(byCategory).map(([category, info]) => `
-        <div class="pkg-card" data-category="${escapeHtml(category)}" data-max="${info.max}">
-          <div class="pkg-card-title">
-            <h3>${escapeHtml(category)}</h3>
-            <span class="limit-badge">${escapeHtml(PACKAGE_BADGES[category] || 'اختر من القائمة')}</span>
-          </div>
-          <div class="pkg-options">
-            ${info.items.length === 0
-              ? '<div class="pkg-empty-note">لا توجد عناصر متاحة حالياً في هذا القسم.</div>'
-              : info.items.map(item => `
-                <label class="pkg-option">
-                  <input type="checkbox" data-category="${escapeHtml(category)}" value="${escapeHtml(item)}">
-                  <span>${escapeHtml(item)}</span>
-                </label>`).join('')}
-          </div>
-        </div>`).join('');
-
-      // فرض الحد الأقصى لكل تصنيف عند الاختيار + قاعدة الألعاب الفردي/الجماعي
-      root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', () => {
-          const card = cb.closest('.pkg-card');
-          const max = parseInt(card.dataset.max, 10);
-          const checked = card.querySelectorAll('input[type="checkbox"]:checked');
-          if (checked.length > max) {
-            cb.checked = false;
-            showAlertModal('⚠️ تم الوصول للحد الأقصى', `لا يمكنك اختيار أكثر من ${max} من هذا القسم.`);
-          }
-          enforceGamesRule();
-        });
-      });
-
-      function enforceGamesRule() {
-        const activitiesChecked = Array.from(root.querySelectorAll('input[data-category="أنشطة"]:checked')).map(i => i.value);
-        const sportsChosen = activitiesChecked.includes('مسابقات رياضية');
-        root.querySelectorAll('input[data-category="اللعب الفردي"], input[data-category="اللعب الجماعي"]').forEach(cb => {
-          cb.disabled = !sportsChosen;
-          if (!sportsChosen) cb.checked = false;
-        });
-      }
-      enforceGamesRule();
-
-      showOnly('packagesScreen');
-    }
-
-    $('reviewPackagesBtn').addEventListener('click', () => {
-      const root = $('packagesRoot');
-      const selections = {};
-      root.querySelectorAll('.pkg-card').forEach(card => {
-        const category = card.dataset.category;
-        selections[category] = Array.from(card.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
-      });
-
-      const summaryLines = Object.entries(selections)
-        .filter(([, items]) => items.length > 0)
-        .map(([cat, items]) => `<strong>${escapeHtml(cat)}:</strong> ${items.map(escapeHtml).join('، ')}`)
-        .join('<br>') || 'لم يتم اختيار أي أنشطة (وهذا مسموح تماماً).';
-
-      showConfirmModal({
-        title: 'تأكيد الاختيار',
-        summaryHtml: summaryLines,
-        confirmText: 'تأكيد والدخول للامتحان',
-        cancelText: 'تعديل الاختيار',
-        onConfirm: async () => {
-          const { error } = await supabaseClient.rpc('save_packages', { p_attempt_id: attemptId, p_selections: selections });
-          if (error) {
-            showAlertModal('⚠️ خطأ', 'تعذر حفظ الاختيارات، حاول مرة أخرى.');
-            return;
-          }
-          const { data: statusData } = await supabaseClient.rpc('get_attempt_status', { p_attempt_id: attemptId });
-          await startExamScreen(statusData?.exam_started_at);
-        }
-      });
-    });
-
-    // =====================================================
-    // المرحلة 3: أداء الامتحان
-    // =====================================================
-    async function startExamScreen(examStartedAt) {
-      if (!examStartedAt) {
-        await supabaseClient.rpc('mark_exam_started', { p_attempt_id: attemptId });
-        const { data } = await supabaseClient.rpc('get_attempt_status', { p_attempt_id: attemptId });
-        examStartedAt = data?.exam_started_at;
-      }
-
-      const { data, error } = await supabaseClient.rpc('get_exam_questions', { p_slug: examSlug });
-      if (error || !data || data.status !== 'success') {
-        showAlertModal('خطأ', 'تعذر تحميل أسئلة الامتحان.');
-        return;
-      }
-
-      exam = data.exam;
-      questions = data.questions;
-      document.title = exam.name;
-      renderQuestions();
-      showOnly('examScreen');
-
-      const startedTs = new Date(examStartedAt).getTime();
-      const elapsed = Math.floor((Date.now() - startedTs) / 1000);
-      const remaining = Math.max(0, EXAM_DURATION_SECONDS - elapsed);
-      startTimer(remaining);
-
-      restoreAnswers();
-      updateProgress();
-    }
-
-    function renderQuestions() {
-      const root = $('questionsRoot');
-      root.innerHTML = questions.map(q => renderQuestionCard(q)).join('');
-
-      root.querySelectorAll('.question-input-node').forEach(input => {
-        input.addEventListener(input.type === 'radio' ? 'change' : 'input', () => {
-          const card = input.closest('.question-card');
-          saveAnswerToCache(card);
-          card.classList.remove('highlight-error');
-          if (input.type === 'radio') {
-            card.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected-active'));
-            input.closest('.option-item').classList.add('selected-active');
-          }
-          updateProgress();
-        });
-      });
-    }
-
-    function renderQuestionCard(q) {
-      const idx = q.question_index;
-      let body = '';
-      if (['true_false', 'multiple_choice', 'location_source'].includes(q.type)) {
-        const options = q.options || (q.type === 'true_false' ? ['صحيح', 'خطأ'] : []);
-        body = options.map((opt, i) => `
-          <label class="option-item">
-            <input class="question-input-node" type="radio" name="q_${idx}" value="${escapeHtml(opt)}">
-            <span>${escapeHtml(opt)}</span>
-          </label>`).join('');
-      } else if (q.type === 'fill_in_the_blank') {
-        const blanksCount = (q.options && q.options.blanks) ? parseInt(q.options.blanks, 10) : 1;
-        body = Array.from({ length: blanksCount }).map((_, i) => `
-          <input class="blank-input question-input-node" type="text" placeholder="إجابة الفراغ ${blanksCount > 1 ? (i + 1) : ''}" data-blank-index="${i}">`).join('');
-      } else {
-        body = `<textarea class="text-answer-input question-input-node" rows="4" placeholder="اكتب إجابتك هنا..."></textarea>`;
-      }
-
-      return `
-        <div class="question-card" data-index="${idx}" data-type="${q.type}">
-          <div class="q-index">السؤال ${idx + 1}</div>
-          <div class="q-text">${escapeHtml(q.question_text)}</div>
-          ${body}
-        </div>`;
-    }
-
-    function getAnswerCacheKey(idx) { return `exam_ans_${attemptId}_${idx}`; }
-
-    function saveAnswerToCache(card) {
-      const idx = card.dataset.index;
-      const type = card.dataset.type;
-      if (type === 'fill_in_the_blank') {
-        const values = Array.from(card.querySelectorAll('.blank-input')).map(i => i.value);
-        localStorage.setItem(getAnswerCacheKey(idx), JSON.stringify(values));
-      } else if (['true_false', 'multiple_choice', 'location_source'].includes(type)) {
-        const checked = card.querySelector('input[type="radio"]:checked');
-        localStorage.setItem(getAnswerCacheKey(idx), checked ? checked.value : '');
-      } else {
-        const el = card.querySelector('.text-answer-input');
-        localStorage.setItem(getAnswerCacheKey(idx), el ? el.value : '');
-      }
-    }
-
-    function restoreAnswers() {
-      document.querySelectorAll('.question-card').forEach(card => {
-        const idx = card.dataset.index;
-        const type = card.dataset.type;
-        const cached = localStorage.getItem(getAnswerCacheKey(idx));
-        if (cached === null) return;
-
-        if (['true_false', 'multiple_choice', 'location_source'].includes(type)) {
-          const radio = card.querySelector(`input[type="radio"][value="${CSS.escape(cached)}"]`);
-          if (radio) { radio.checked = true; radio.closest('.option-item').classList.add('selected-active'); }
-        } else if (type === 'fill_in_the_blank') {
-          try {
-            const values = JSON.parse(cached);
-            card.querySelectorAll('.blank-input').forEach((inp, i) => inp.value = values[i] ?? '');
-          } catch (e) {}
-        } else {
-          const el = card.querySelector('.text-answer-input');
-          if (el) el.value = cached;
-        }
-      });
-    }
-
-    function isCardAnswered(card) {
-      const type = card.dataset.type;
-      if (['true_false', 'multiple_choice', 'location_source'].includes(type)) {
-        return card.querySelector('input[type="radio"]:checked') !== null;
-      }
-      if (type === 'fill_in_the_blank') {
-        const blanks = card.querySelectorAll('.blank-input');
-        if (blanks.length === 0) return false;
-        return Array.from(blanks).every(inp => inp.value.trim() !== '');
-      }
-      const el = card.querySelector('.text-answer-input');
-      return !!(el && el.value.trim() !== '');
-    }
-
-    function updateProgress() {
-      const cards = document.querySelectorAll('.question-card');
-      let answered = 0;
-      cards.forEach(c => { if (isCardAnswered(c)) answered++; });
-      const pct = cards.length ? (answered / cards.length) * 100 : 0;
-      $('progressBar').style.width = pct + '%';
-      $('progressText').innerText = `تم حل ${answered} من أصل ${cards.length} أسئلة`;
-    }
-
-    function cleanExamCache() {
-      document.querySelectorAll('.question-card').forEach(card => localStorage.removeItem(getAnswerCacheKey(card.dataset.index)));
-    }
-
-    function collectAnswers() {
-      const answers = {};
-      document.querySelectorAll('.question-card').forEach(card => {
-        const idx = parseInt(card.dataset.index, 10);
-        const type = card.dataset.type;
-        if (type === 'fill_in_the_blank') {
-          answers[idx] = Array.from(card.querySelectorAll('.blank-input')).map(i => i.value.trim());
-        } else if (['true_false', 'multiple_choice', 'location_source'].includes(type)) {
-          const checked = card.querySelector('input[type="radio"]:checked');
-          answers[idx] = checked ? checked.value : '';
-        } else {
-          const el = card.querySelector('.text-answer-input');
-          answers[idx] = el ? el.value.trim() : '';
-        }
-      });
-      return answers;
-    }
-
-    function startTimer(remainingSeconds) {
-      const startTs = Date.now();
-      function tick() {
-        const remaining = Math.max(0, remainingSeconds - Math.floor((Date.now() - startTs) / 1000));
-        const mins = Math.floor(remaining / 60).toString().padStart(2, '0');
-        const secs = (remaining % 60).toString().padStart(2, '0');
-        $('timer').innerText = `${mins}:${secs}`;
-        if (remaining <= 120) $('timerContainer').classList.add('critical');
-        if (remaining <= 0) {
-          clearInterval(timerInterval);
-          submitExam(true);
-        }
-      }
-      timerInterval = setInterval(tick, 1000);
-      tick();
-    }
-
-    let isSubmitting = false;
-
-    async function submitExam(isTimeOut) {
-      if (isSubmitting) return;
-      isSubmitting = true;
-      $('submitExamBtn').disabled = true;
-
-      const answers = collectAnswers();
-      const { data, error } = await supabaseClient.rpc('submit_exam', { p_attempt_id: attemptId, p_answers: answers });
-
-      if (error || !data || data.status !== 'success') {
-        isSubmitting = false;
-        $('submitExamBtn').disabled = false;
-        showAlertModal('⚠️ خطأ في التسليم', (data && data.message) || 'حدث خطأ غير متوقع، حاول مرة أخرى.');
-        return;
-      }
-
-      clearInterval(timerInterval);
-      cleanExamCache();
-      localStorage.removeItem(attemptStorageKey());
-      window.location.href = 'results.html?attempt=' + attemptId;
-    }
-
-    $('submitExamBtn').addEventListener('click', () => {
-      let firstUnanswered = null;
-      document.querySelectorAll('.question-card').forEach(card => {
-        if (!firstUnanswered && !isCardAnswered(card)) firstUnanswered = card;
-      });
-
-      if (firstUnanswered) {
-        firstUnanswered.classList.add('highlight-error');
-        firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showAlertModal('⚠️ أسئلة غير مكتملة', 'لا يمكنك تسليم الامتحان قبل الإجابة على جميع الأسئلة المطروحة. يرجى مراجعة السؤال المحدد باللون الأحمر.');
-        return;
-      }
-
-      showConfirmModal({
-        title: '📝 إنهاء وتسليم الإجابة',
-        text: 'هل أنت متأكد من رغبتك في إرسال ورقة الإجابة الحالية وإنهاء الامتحان؟ لن تتمكن من التعديل مجدداً.',
-        confirmText: 'نعم، قم بالتسليم فوراً',
-        cancelText: 'تراجع، مراجعة الإجابات',
-        onConfirm: () => submitExam(false)
-      });
-    });
-
-    init();
-  </script>
+  <script type="module" src="js/exam.js"></script>
 </body>
 </html>
