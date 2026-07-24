@@ -1,4 +1,4 @@
-import { getAllExams } from "./includes/functions.js";
+import { getAllExams } from "../includes/functions.js";
 
 function escapeHtml(str) {
   const d = document.createElement("div");
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           0,
           window.location.pathname.lastIndexOf("/") + 1,
         );
-        const examUrl = `${currentOrigin}${currentPath}exam.html?slug=${encodeURIComponent(examSlug)}`;
+        const examUrl = `${currentOrigin}${currentPath}exam.html?exam=${encodeURIComponenexamSlugt()}`;
 
         return `
         <div class="idx-card" style="background: var(--bg-card, #1e2230); border: 1px solid var(--border, #2e3448); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <p class="idx-card-desc" style="color: var(--text-muted, #94a3b8); font-size: 0.9rem; line-height: 1.5;">${escapeHtml(exam.description || "اضغط أدناه للبدء في أداء الامتحان.")}</p>
           </div>
           <div class="idx-card-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem;">
-            <a href="exam.html?slug=${encodeURIComponent(examSlug)}" class="idx-btn primary" style="flex: 1; min-width: 120px; text-align: center; text-decoration: none; background: var(--primary, #3b82f6); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <a href="exam.html?exam=${encodeURIComponenexamSlugt()}" class="idx-btn primary" style="flex: 1; min-width: 120px; text-align: center; text-decoration: none; background: var(--primary, #3b82f6); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
               <i class="fa-solid fa-play"></i> ابدأ الامتحان
             </a>
             <button type="button" class="copy-btn" data-url="${escapeHtml(examUrl)}" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3d52); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 0.4rem;">
