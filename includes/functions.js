@@ -506,4 +506,5 @@ export async function getPackageSelectionsBatch(attemptIds) {
   });
 
   return result;
+  
 }
