@@ -311,7 +311,6 @@ async function showPackages() {
         startExam();
       },
     });
-    // نجعل الزر الأول (المؤكد للدخول) هو زر التأكيد، والثاني هو الإلغاء بترتيب واجهة العرض
   });
 }
 
@@ -360,7 +359,7 @@ async function startExam() {
   document.getElementById("userNameTag").textContent = currentAttempt.user_name;
   document.getElementById("userPhoneTag").textContent = currentAttempt.user_phone;
 
-  // استرجاع أي إجابات محفوظة محلياً (autosave بدون أي استعلامات إضافية لقاعدة البيانات)
+  // استرجاع أي إجابات محفوظة محلياً
   try {
     answers = JSON.parse(localStorage.getItem(answersStorageKey())) || {};
   } catch {
@@ -491,11 +490,18 @@ function evaluateProgress() {
 }
 
 /* =======================================
-   المؤقت
+   المؤقت (تم الإصلاح لمنع الإغلاق المباشر)
 ======================================= */
 function startTimer() {
-  const base = currentAttempt.exam_started_at || currentAttempt.start_time;
-  examStartedAtMs = new Date(base).getTime();
+  const base = currentAttempt ? (currentAttempt.exam_started_at || currentAttempt.start_time) : null;
+  let parsedTime = base ? new Date(base).getTime() : NaN;
+
+  // إذا كانت القيمة غير صالحة أو فارغة أو تساوي 0، استخدم الوقت الحالي فوراً
+  if (isNaN(parsedTime) || parsedTime <= 0) {
+    parsedTime = Date.now();
+  }
+
+  examStartedAtMs = parsedTime;
   const timerEl = document.getElementById("timer");
   const timerContainer = document.getElementById("timerContainer");
 
@@ -516,6 +522,7 @@ function startTimer() {
     timerEl.textContent = `${mins}:${secs}`;
   }
 
+  if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(tick, 1000);
   tick();
 }
