@@ -5,6 +5,7 @@ import {
   getAttemptsByPassFail,
   getPackageSelectionsBatch,
   getAllExams,
+  deleteAttempt,
 } from "../includes/functions.js";
 import { CHURCHES_LIST } from "../includes/config.js";
 
@@ -20,7 +21,7 @@ function scoreColor(percentage) {
   if (p >= 76) return "#3b82f6"; // جيد جداً
   if (p >= 61) return "#eab308"; // جيد
   if (p >= 50) return "#f97316"; // مقبول
-  return "#ef4444";             // ضعيف
+  return "#ef4444"; // راسب
 }
 
 export async function renderAdminAttemptsPage(tab) {
@@ -39,10 +40,7 @@ export async function renderAdminAttemptsPage(tab) {
     [filterCategory, filterItem] = filterRaw.split("|||");
   }
 
-  const [packages, exams] = await Promise.all([
-    loadPackages(),
-    getAllExams(),
-  ]);
+  const [packages, exams] = await Promise.all([loadPackages(), getAllExams()]);
 
   const passTotal = await countAttemptsByPassFail(
     "pass",
@@ -103,7 +101,9 @@ export async function renderAdminAttemptsPage(tab) {
           .map((item) => {
             const val = `${category}|||${item}`;
             const selected =
-              filterCategory === category && filterItem === item ? "selected" : "";
+              filterCategory === category && filterItem === item
+                ? "selected"
+                : "";
             return `<option value="${escapeHtml(val)}" ${selected}>${escapeHtml(item)}</option>`;
           })
           .join("")}
@@ -160,7 +160,14 @@ export async function renderAdminAttemptsPage(tab) {
             <td>${escapeHtml(a.exam_name)}</td>
             <td class="pct-pill" style="color:${scoreColor(a.percentage)}; font-weight: bold;">${Number(a.percentage).toFixed(1)}%</td>
             <td>${escapeHtml(a.grade_text || "-")}</td>
-            <td><i class="fa-solid fa-chevron-down"></i></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.5rem; justify-content:flex-end;">
+                <button type="button" onclick="event.stopPropagation(); handleDeleteStudent(${a.id}, '${escapeHtml(a.user_name)}')" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:0.25rem 0.5rem; cursor:pointer; font-size:0.8rem;">
+                  <i class="fa-solid fa-trash"></i> مسح
+                </button>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+            </td>
           </tr>
           <tr class="a-detail-row" id="detail_${a.id}">
             <td colspan="7">
@@ -245,7 +252,7 @@ export async function renderAdminAttemptsPage(tab) {
     ${
       attempts.length
         ? `<table class="a-table">
-            <thead><tr><th>الاسم</th><th>الكنيسة</th><th>الهاتف</th><th>الامتحان</th><th>النسبة</th><th>التقدير</th><th></th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الكنيسة</th><th>الهاتف</th><th>الامتحان</th><th>النسبة</th><th>التقدير</th><th>إجراءات</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
           ${paginationHtml}`
@@ -255,6 +262,25 @@ export async function renderAdminAttemptsPage(tab) {
 
   window.toggleRow = (id) =>
     document.getElementById(`detail_${id}`).classList.toggle("open");
+
+  window.handleDeleteStudent = async (id, name) => {
+    const password = prompt(`حذف الطالب "${name}"؟\nأدخل كلمة المرور للتأكيد:`);
+    if (password === null) return;
+    
+    if (password !== "213510") {
+      alert("كلمة المرور غير صحيحة!");
+      return;
+    }
+
+    try {
+      await deleteAttempt(id);
+      alert("تم مسح الطالب بنجاح!");
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء المسح!");
+    }
+  };
 
   const themeToggle = document.getElementById("themeToggle");
   const htmlEl = document.documentElement;
