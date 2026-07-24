@@ -134,7 +134,7 @@ export async function getGradeText(percentage) {
   if (p >= 76) return "جيد جداً";
   if (p >= 61) return "جيد";
   if (p >= 50) return "مقبول";
-  return "ضعيف";
+  return "راسب";
 }
 
 export async function getPassThreshold() {
@@ -269,6 +269,12 @@ export async function submitExamAttempt(attemptId, questions, postedAnswers) {
     .eq("id", attemptId);
   if (attErr) throw attErr;
 
+  return true;
+}
+
+export async function deleteAttempt(attemptId) {
+  const { error } = await supabase.from("attempts").delete().eq("id", attemptId);
+  if (error) throw error;
   return true;
 }
 
@@ -452,7 +458,6 @@ export async function getAttemptsByPassFail(
     return [];
   }
 
-  // مطابقة أسماء الامتحانات بأمان دون استخدام العلاقات المباشرة المقيدة
   const examsList = await getAllExams();
   const examMap = {};
   examsList.forEach((e) => (examMap[e.id] = e.name));
