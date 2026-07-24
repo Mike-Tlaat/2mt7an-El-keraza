@@ -10,7 +10,7 @@ export const SUPABASE_ANON_KEY =
 // مدة الامتحان بالثواني (30 دقيقة)
 export const EXAM_DURATION_SECONDS = 30 * 60;
 
-// مسار فولدر الأسئلة (نسبي لجذر الموقع)
+// مسار فولدر الأسئلة (مسار نسبي بدون / في البداية لتجنب خطأ 404)
 export const QUESTIONS_PATH = "questions/";
 
 // اسم فولدر الإدارة (بدون أي باسورد)
