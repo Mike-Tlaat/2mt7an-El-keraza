@@ -1,6 +1,4 @@
 // admin_list_render.js
-// منطق وواجهة عرض قائمة الطلاب (ناجحين / غير ناجحين) مع الفلترة الشاملة
-
 import {
   loadPackages,
   countAttemptsByPassFail,
@@ -17,9 +15,12 @@ function escapeHtml(str) {
 }
 
 function scoreColor(percentage) {
-  if (percentage >= 75) return "var(--a-success)";
-  if (percentage >= 50) return "var(--a-warning)";
-  return "var(--a-danger)";
+  const p = Number(percentage) || 0;
+  if (p >= 91) return "#22c55e"; // ممتاز
+  if (p >= 76) return "#3b82f6"; // جيد جداً
+  if (p >= 61) return "#eab308"; // جيد
+  if (p >= 50) return "#f97316"; // مقبول
+  return "#ef4444";             // ضعيف
 }
 
 export async function renderAdminAttemptsPage(tab) {
@@ -78,13 +79,13 @@ export async function renderAdminAttemptsPage(tab) {
   const isPassPage = tab === "pass";
   const pageTitle = isPassPage ? "الناجحون" : "غير الناجحين";
 
-  // قائمة خيارات الكنائس
+  // قائمة الكنائس
   const churchOptionsHtml = CHURCHES_LIST.map((church) => {
     const selected = filterChurch === church ? "selected" : "";
     return `<option value="${escapeHtml(church)}" ${selected}>${escapeHtml(church)}</option>`;
   }).join("");
 
-  // قائمة خيارات الامتحانات
+  // قائمة الامتحانات
   const examOptionsHtml = exams
     .map((exam) => {
       const selected = String(filterExam) === String(exam.id) ? "selected" : "";
@@ -92,7 +93,7 @@ export async function renderAdminAttemptsPage(tab) {
     })
     .join("");
 
-  // قائمة خيارات الأنشطة
+  // قائمة الأنشطة والألعاب
   const filterOptionsHtml = Object.entries(packages)
     .filter(([, items]) => items.length)
     .map(
@@ -124,7 +125,6 @@ export async function renderAdminAttemptsPage(tab) {
     activeNotes.push(`النشاط: ${escapeHtml(filterItem)}`);
   }
 
-  // رابط التبديل بين الناجحين وغير الناجحين مع الحفاظ على الفلاتر
   const tabParams = new URLSearchParams(qs);
   tabParams.delete("page");
   const tabQueryStr = tabParams.toString() ? `?${tabParams.toString()}` : "";
@@ -158,7 +158,7 @@ export async function renderAdminAttemptsPage(tab) {
             <td>${escapeHtml(a.user_church)}</td>
             <td>${escapeHtml(a.user_phone)}</td>
             <td>${escapeHtml(a.exam_name)}</td>
-            <td class="pct-pill" style="color:${scoreColor(a.percentage)}">${Number(a.percentage).toFixed(1)}%</td>
+            <td class="pct-pill" style="color:${scoreColor(a.percentage)}; font-weight: bold;">${Number(a.percentage).toFixed(1)}%</td>
             <td>${escapeHtml(a.grade_text || "-")}</td>
             <td><i class="fa-solid fa-chevron-down"></i></td>
           </tr>
@@ -193,7 +193,7 @@ export async function renderAdminAttemptsPage(tab) {
     <div class="a-topbar">
       <div>
         <h1><i class="fa-solid fa-graduation-cap"></i> ${pageTitle}</h1>
-        <p>عرض سريع لقائمة الطلاب واختياراتهم من الأنشطة (بدون تحميل إجاباتهم)</p>
+        <p>عرض سريع لقائمة الطلاب واختياراتهم من الأنشطة والأنشطة الرياضية</p>
       </div>
       <button class="a-theme-btn" id="themeToggle"><i class="fa-solid fa-circle-half-stroke"></i></button>
     </div>
@@ -227,7 +227,7 @@ export async function renderAdminAttemptsPage(tab) {
       </div>
 
       <div style="display: flex; align-items: center; gap: 0.4rem;">
-        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> النشاط:</label>
+        <label style="font-size:.82rem;color:var(--a-text-soft);font-weight:700;"><i class="fa-solid fa-filter"></i> النشاط / اللعبة:</label>
         <select name="filter">
           <option value="">-- كل الأنشطة --</option>
           ${filterOptionsHtml}
