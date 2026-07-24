@@ -11,7 +11,7 @@ export const SUPABASE_ANON_KEY =
 export const EXAM_DURATION_SECONDS = 30 * 60;
 
 // مسار فولدر الأسئلة (نسبي لجذر الموقع)
-export const QUESTIONS_PATH = "/questions/";
+export const QUESTIONS_PATH = "questions/";
 
 // اسم فولدر الإدارة (بدون أي باسورد)
 export const ADMIN_FOLDER = "admin21-samanoud";
