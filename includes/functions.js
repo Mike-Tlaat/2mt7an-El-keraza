@@ -41,18 +41,6 @@ export async function getAllExams() {
 }
 
 /* =======================================
-   فتح / غلق الامتحان (للإدارة)
-======================================= */
-export async function setExamOpenStatus(examId, isOpen) {
-  const { error } = await supabase
-    .from("exams")
-    .update({ is_open: isOpen })
-    .eq("id", examId);
-  if (error) throw error;
-  return true;
-}
-
-/* =======================================
    تحميل الأسئلة من ملف JSON
 ======================================= */
 export async function loadQuestions(jsonFile) {
@@ -506,5 +494,4 @@ export async function getPackageSelectionsBatch(attemptIds) {
   });
 
   return result;
-  
 }
