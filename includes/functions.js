@@ -1,9 +1,18 @@
 import { supabase } from "./db.js";
 import {
   QUESTIONS_PATH,
+  ADMIN_FOLDER,
   PACKAGE_CATEGORIES,
   SPORTS_TOGGLE_ITEM,
 } from "./config.js";
+
+/* =======================================
+   تحديد مسار الملفات ديناميكياً
+======================================= */
+function getQuestionsPath() {
+  const isSubfolder = window.location.pathname.includes("/" + ADMIN_FOLDER);
+  return isSubfolder ? "../" + QUESTIONS_PATH : QUESTIONS_PATH;
+}
 
 /* =======================================
    الامتحانات
@@ -35,7 +44,8 @@ export async function getAllExams() {
    تحميل الأسئلة من ملف JSON
 ======================================= */
 export async function loadQuestions(jsonFile) {
-  const res = await fetch(QUESTIONS_PATH + jsonFile, { cache: "no-store" });
+  const path = getQuestionsPath() + jsonFile;
+  const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) return null;
   const data = await res.json();
   if (!data || typeof data !== "object") return null;
@@ -116,38 +126,19 @@ export function gradeQuestion(type, userAnswer, correctAnswer) {
 }
 
 /* =======================================
-   إعدادات النظام
+   إعدادات النظام والتقديرات
 ======================================= */
-let settingsCache = null;
-async function getSettingsMap() {
-  if (settingsCache) return settingsCache;
-  const { data } = await supabase
-    .from("settings")
-    .select("setting_key, setting_value");
-  settingsCache = {};
-  (data || []).forEach(
-    (row) => (settingsCache[row.setting_key] = row.setting_value),
-  );
-  return settingsCache;
-}
-
 export async function getGradeText(percentage) {
-  const s = await getSettingsMap();
-  const excellent = Number(s.grade_excellent ?? 90);
-  const veryGood = Number(s.grade_very_good ?? 80);
-  const good = Number(s.grade_good ?? 70);
-  const acceptable = Number(s.grade_acceptable ?? 60);
-
-  if (percentage >= excellent) return "ممتاز";
-  if (percentage >= veryGood) return "جيد جداً";
-  if (percentage >= good) return "جيد";
-  if (percentage >= acceptable) return "مقبول";
-  return "راسب";
+  const p = Number(percentage) || 0;
+  if (p >= 91) return "ممتاز";
+  if (p >= 76) return "جيد جداً";
+  if (p >= 61) return "جيد";
+  if (p >= 50) return "مقبول";
+  return "ضعيف";
 }
 
 export async function getPassThreshold() {
-  const s = await getSettingsMap();
-  return Number(s.pass_percentage ?? 50);
+  return 50; // حد النجاح 50%
 }
 
 /* =======================================
@@ -294,7 +285,8 @@ export async function loadPackages() {
   Object.keys(categories).forEach((c) => (empty[c] = []));
 
   try {
-    const res = await fetch(QUESTIONS_PATH + "pk.json", { cache: "no-store" });
+    const path = getQuestionsPath() + "pk.json";
+    const res = await fetch(path, { cache: "no-store" });
     if (!res.ok) return empty;
     const data = await res.json();
     const result = { ...empty };
@@ -385,26 +377,30 @@ export async function countAttemptsByPassFail(
     .select("id", { count: "exact", head: true })
     .eq("pass_fail", passFail);
 
-  if (filterChurch) {
-    query = query.eq("user_church", filterChurch);
+  if (filterChurch && filterChurch.trim() !== "") {
+    query = query.eq("user_church", filterChurch.trim());
   }
 
-  if (filterExamId) {
+  if (filterExamId && String(filterExamId).trim() !== "") {
     query = query.eq("exam_id", Number(filterExamId));
   }
 
   if (filterCategory && filterItem) {
-    const { data } = await supabase
+    const { data: pkgData } = await supabase
       .from("attempt_packages")
       .select("attempt_id")
       .eq("category", filterCategory)
       .eq("item", filterItem);
-    const ids = (data || []).map((r) => r.attempt_id);
+    const ids = (pkgData || []).map((r) => r.attempt_id);
     if (!ids.length) return 0;
     query = query.in("id", ids);
   }
 
-  const { count } = await query;
+  const { count, error } = await query;
+  if (error) {
+    console.error("Count attempts error:", error);
+    return 0;
+  }
   return count || 0;
 }
 
@@ -419,28 +415,28 @@ export async function getAttemptsByPassFail(
 ) {
   let idFilter = null;
   if (filterCategory && filterItem) {
-    const { data } = await supabase
+    const { data: pkgData } = await supabase
       .from("attempt_packages")
       .select("attempt_id")
       .eq("category", filterCategory)
       .eq("item", filterItem);
-    idFilter = (data || []).map((r) => r.attempt_id);
+    idFilter = (pkgData || []).map((r) => r.attempt_id);
     if (!idFilter.length) return [];
   }
 
   let query = supabase
     .from("attempts")
     .select(
-      "id, exam_id, user_name, user_church, user_phone, status, total_score, total_possible, percentage, grade_text, pass_fail, created_at, exams(name)",
+      "id, exam_id, user_name, user_church, user_phone, status, total_score, total_possible, percentage, grade_text, pass_fail, created_at",
     )
     .eq("pass_fail", passFail)
     .order("created_at", { ascending: false });
 
-  if (filterChurch) {
-    query = query.eq("user_church", filterChurch);
+  if (filterChurch && filterChurch.trim() !== "") {
+    query = query.eq("user_church", filterChurch.trim());
   }
 
-  if (filterExamId) {
+  if (filterExamId && String(filterExamId).trim() !== "") {
     query = query.eq("exam_id", Number(filterExamId));
   }
 
@@ -450,10 +446,20 @@ export async function getAttemptsByPassFail(
 
   query = query.range(offset, offset + limit - 1);
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) {
+    console.error("Get attempts error:", error);
+    return [];
+  }
+
+  // مطابقة أسماء الامتحانات بأمان دون استخدام العلاقات المباشرة المقيدة
+  const examsList = await getAllExams();
+  const examMap = {};
+  examsList.forEach((e) => (examMap[e.id] = e.name));
+
   return (data || []).map((row) => ({
     ...row,
-    exam_name: row.exams?.name || "",
+    exam_name: examMap[row.exam_id] || "امتحان غير معروف",
   }));
 }
 
