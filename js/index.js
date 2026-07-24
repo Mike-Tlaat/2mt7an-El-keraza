@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       })
       .join("");
 
-    // معالجة الضغط على زر النسخ
+    // معالجة زر نسخ الرابط
     document.querySelectorAll(".copy-btn").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const targetBtn = e.currentTarget;
