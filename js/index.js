@@ -25,18 +25,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       .map((exam) => {
         const examSlug = exam.slug || exam.id;
         const isOpen = exam.is_open !== false;
-        const currentOrigin = window.location.origin;
-        const currentPath = window.location.pathname.substring(
-          0,
-          window.location.pathname.lastIndexOf("/") + 1,
-        );
-        const examUrl = `${currentOrigin}${currentPath}exam.html?slug=${encodeURIComponent(examSlug)}`;
 
         const startBtnHtml = isOpen
-          ? `<a href="exam.html?slug=${encodeURIComponent(examSlug)}" class="idx-btn primary" style="flex: 1; min-width: 120px; text-align: center; text-decoration: none; background: var(--primary, #3b82f6); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          ? `<a href="exam.html?slug=${encodeURIComponent(examSlug)}" class="idx-btn primary" style="width: 100%; text-align: center; text-decoration: none; background: var(--primary, #3b82f6); color: #fff; padding: 0.75rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
               <i class="fa-solid fa-play"></i> ابدأ الامتحان
             </a>`
-          : `<span class="idx-btn disabled" style="flex: 1; min-width: 120px; text-align: center; background: rgba(255,255,255,0.05); color: var(--text-muted, #94a3b8); padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: not-allowed;">
+          : `<span class="idx-btn disabled" style="width: 100%; text-align: center; background: rgba(255,255,255,0.05); color: var(--text-muted, #94a3b8); padding: 0.75rem 1rem; border-radius: 8px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: not-allowed;">
               <i class="fa-solid fa-lock"></i> الامتحان مغلق
             </span>`;
 
@@ -52,46 +46,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             <h3 class="idx-card-title" style="margin-bottom: 0.5rem;">${escapeHtml(exam.name)}</h3>
             <p class="idx-card-desc" style="color: var(--text-muted, #94a3b8); font-size: 0.9rem; line-height: 1.5;">${escapeHtml(exam.description || "اضغط أدناه للبدء في أداء الامتحان.")}</p>
           </div>
-          <div class="idx-card-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem;">
+          <div class="idx-card-actions" style="margin-top: 1.5rem;">
             ${startBtnHtml}
-            <button type="button" class="copy-btn" data-url="${escapeHtml(examUrl)}" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3d52); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-              <i class="fa-solid fa-copy"></i> نسخ الرابط
-            </button>
           </div>
         </div>`;
       })
       .join("");
-
-    // معالجة الضغط على زر النسخ
-    document.querySelectorAll(".copy-btn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const targetBtn = e.currentTarget;
-        const url = targetBtn.getAttribute("data-url");
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(url);
-          } else {
-            const ta = document.createElement("textarea");
-            ta.value = url;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
-          }
-
-          const originalHtml = targetBtn.innerHTML;
-          targetBtn.innerHTML = `<i class="fa-solid fa-check" style="color: #22c55e;"></i> تم النسخ!`;
-          targetBtn.style.borderColor = "#22c55e";
-
-          setTimeout(() => {
-            targetBtn.innerHTML = originalHtml;
-            targetBtn.style.borderColor = "var(--border, #3a3d52)";
-          }, 2000);
-        } catch (err) {
-          alert("يمكنك نسخ الرابط التالي:\n" + url);
-        }
-      });
-    });
   } catch (err) {
     console.error("Error loading exams:", err);
     grid.innerHTML = `
